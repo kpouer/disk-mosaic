@@ -1,5 +1,6 @@
 mod data;
 mod disk_analyzer;
+mod ui;
 
 use disk_analyzer::DiskAnalyzer;
 
