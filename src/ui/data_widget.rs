@@ -32,13 +32,24 @@ impl<'a> Widget for DataWidget<'a> {
             egui::StrokeKind::Inside,
         );
         let font_id = FontId::new(12.5, Proportional);
-        let layout = ui
-            .painter()
-            .layout(self.data.name.clone(), font_id, Color32::BLACK, ui.available_width());
-        ui.put(
-            rect,
-            egui::Label::new(layout),
+        let layout = ui.painter().layout(
+            self.data.name.clone(),
+            font_id,
+            Color32::BLACK,
+            ui.available_width(),
         );
+        if layout.rect.width() < rect.width() {
+            ui.put(
+                Rect::from_min_max(
+                    rect.min,
+                    Pos2::new(
+                        rect.min.x + layout.rect.width(),
+                        rect.min.y + layout.rect.height(),
+                    ),
+                ),
+                egui::Label::new(layout),
+            );
+        }
 
         ui.allocate_rect(rect, egui::Sense::hover())
     }

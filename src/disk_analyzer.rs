@@ -1,8 +1,8 @@
 use crate::data::Data;
+use crate::ui::data_widget::DataWidget;
+use egui::Widget;
 use rand::Rng;
 use treemap::TreemapLayout;
-use egui::Widget;
-use crate::ui::data_widget::DataWidget;
 
 struct TreemapDataWidget<'a> {
     data: &'a [Data],

@@ -16,11 +16,7 @@ impl Data {
             name,
             value,
             bounds: treemap::Rect::new(),
-            color: Color32::from_rgb(
-                rnd.random::<u8>(),
-                rnd.random::<u8>(),
-                rnd.random::<u8>(),
-            ),
+            color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
         }
     }
 }
