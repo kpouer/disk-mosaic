@@ -4,12 +4,9 @@ use egui::Widget;
 use rand::Rng;
 use treemap::TreemapLayout;
 
-struct TreemapDataWidget<'a> {
-    data: &'a [Data],
-}
-
 pub struct DiskAnalyzer {
     data: Vec<Data>,
+    root: String,
 }
 
 impl Default for DiskAnalyzer {
@@ -19,7 +16,14 @@ impl Default for DiskAnalyzer {
         for i in 0..100 {
             data.push(Data::new(format!("Item {}", i), rnd.random::<f64>()));
         }
-        Self { data }
+        let root = match home::home_dir() {
+            None => "/".to_string(),
+            Some(home) => home.as_path().to_string_lossy().to_string(),
+        };
+        Self {
+            data,
+            root,
+        }
     }
 }
 
