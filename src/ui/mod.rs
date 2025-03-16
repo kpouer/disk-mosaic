@@ -1,1 +1,1 @@
-mod data_widget;
+pub mod data_widget;

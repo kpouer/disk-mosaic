@@ -1,9 +1,8 @@
 use crate::data::Data;
-use eframe::epaint::{CornerRadius, Stroke, StrokeKind};
-use egui::emath;
 use rand::Rng;
 use treemap::TreemapLayout;
 use egui::Widget;
+use crate::ui::data_widget::DataWidget;
 
 struct TreemapDataWidget<'a> {
     data: &'a [Data],
@@ -43,20 +42,7 @@ impl eframe::App for DiskAnalyzer {
             layout.layout_items(&mut self.data, rect);
 
             self.data.iter().for_each(|data| {
-                let rect = egui::emath::Rect::from_min_max(
-                    emath::Pos2::new(data.bounds.x as f32, data.bounds.y as f32),
-                    emath::Pos2::new(
-                        (data.bounds.x + data.bounds.w) as f32,
-                        (data.bounds.y + data.bounds.h) as f32,
-                    ),
-                );
-                ui.painter().rect(
-                    rect,
-                    CornerRadius::ZERO,
-                    data.color,
-                    Stroke::default(),
-                    StrokeKind::Inside,
-                );
+                DataWidget::new(data).ui(ui);
             });
         });
     }
