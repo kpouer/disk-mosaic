@@ -16,7 +16,7 @@ impl Default for DiskAnalyzer {
     fn default() -> Self {
         let mut rnd = rand::rng();
         let mut data = vec![];
-        for i in 0..10 {
+        for i in 0..100 {
             data.push(Data::new(format!("Item {}", i), rnd.random::<f64>()));
         }
         Self { data }
@@ -31,15 +31,14 @@ impl eframe::App for DiskAnalyzer {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let layout = TreemapLayout::new();
-            let available_size = ui.available_size();
+            let clip_rect = ui.clip_rect();
             let rect = treemap::Rect::from_points(
-                0.0,
-                0.0,
-                available_size.x as f64,
-                available_size.y as f64,
+                clip_rect.left() as f64,
+                clip_rect.top() as f64,
+                clip_rect.width() as f64,
+                clip_rect.height() as f64,
             );
-            layout.layout_items(&mut self.data, rect);
+            TreemapLayout::new().layout_items(&mut self.data, rect);
 
             self.data.iter().for_each(|data| {
                 DataWidget::new(data).ui(ui);

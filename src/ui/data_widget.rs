@@ -1,4 +1,4 @@
-use egui::{Color32, Rect, RichText, Ui, Widget};
+use egui::{Color32, Pos2, Rect, RichText, Ui, Widget};
 
 use crate::data::Data;
 
@@ -30,15 +30,18 @@ impl<'a> Widget for DataWidget<'a> {
             egui::StrokeKind::Inside,
         );
 
-        ui.put(
-            rect,
-            egui::Label::new(
-                RichText::new(&self.data.name)
-                    .color(Color32::BLACK)
-                    .background_color(Color32::WHITE)
-                    .size(18.0),
-            ),
-        );
+        ui.vertical(|ui| {
+            ui.put(
+                rect,
+                egui::Label::new(
+                    RichText::new(&self.data.name)
+                        .color(Color32::BLACK)
+                        .background_color(Color32::WHITE)
+                        .size(18.0),
+                ),
+            );
+        });
+
 
         ui.allocate_rect(rect, egui::Sense::hover())
     }
