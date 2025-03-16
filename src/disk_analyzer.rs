@@ -20,18 +20,17 @@ impl Default for DiskAnalyzer {
             None => "/".to_string(),
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
-        Self {
-            data,
-            root,
-        }
+        Self { data, root }
     }
 }
 
 impl eframe::App for DiskAnalyzer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.heading("Left Panel");
-            ui.label("This is the left panel content.");
+            ui.horizontal(|ui| {
+                ui.label("Root");
+                ui.text_edit_singleline(&mut self.root);
+            });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
