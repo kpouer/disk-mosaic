@@ -1,3 +1,5 @@
+use eframe::epaint::FontFamily::Proportional;
+use eframe::epaint::FontId;
 use egui::{Color32, Pos2, Rect, RichText, Ui, Widget};
 
 use crate::data::Data;
@@ -29,19 +31,14 @@ impl<'a> Widget for DataWidget<'a> {
             egui::Stroke::default(),
             egui::StrokeKind::Inside,
         );
-
-        ui.vertical(|ui| {
-            ui.put(
-                rect,
-                egui::Label::new(
-                    RichText::new(&self.data.name)
-                        .color(Color32::BLACK)
-                        .background_color(Color32::WHITE)
-                        .size(18.0),
-                ),
-            );
-        });
-
+        let font_id = FontId::new(12.5, Proportional);
+        let layout = ui
+            .painter()
+            .layout(self.data.name.clone(), font_id, Color32::BLACK, ui.available_width());
+        ui.put(
+            rect,
+            egui::Label::new(layout),
+        );
 
         ui.allocate_rect(rect, egui::Sense::hover())
     }
