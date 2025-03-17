@@ -1,6 +1,6 @@
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
-use egui::{Color32, Pos2, Rect, RichText, Ui, Widget};
+use egui::{Color32, Pos2, Rect, Ui, Widget};
 
 use crate::data::Data;
 
@@ -14,16 +14,26 @@ impl<'a> DataWidget<'a> {
     }
 }
 
+const HOVER_ZOOMING: f32 = 10.0;
+
 impl<'a> Widget for DataWidget<'a> {
     fn ui(self, ui: &mut Ui) -> egui::Response {
-        let rect = Rect::from_min_max(
+        let mut rect = Rect::from_min_max(
             egui::emath::Pos2::new(self.data.bounds.x as f32, self.data.bounds.y as f32),
             egui::emath::Pos2::new(
                 (self.data.bounds.x + self.data.bounds.w) as f32,
                 (self.data.bounds.y + self.data.bounds.h) as f32,
             ),
         );
+        let response = ui.allocate_rect(rect, egui::Sense::hover());
+        let hovered = response.hovered();
 
+        if hovered {
+            rect.min.x -= HOVER_ZOOMING;
+            rect.min.y -= HOVER_ZOOMING;
+            rect.max.x += HOVER_ZOOMING;
+            rect.max.y += HOVER_ZOOMING;
+        }
         ui.painter().rect(
             rect,
             egui::epaint::CornerRadius::ZERO,
@@ -31,7 +41,21 @@ impl<'a> Widget for DataWidget<'a> {
             egui::Stroke::default(),
             egui::StrokeKind::Inside,
         );
+        self.draw_label(ui, rect, hovered);
+
+        response
+    }
+}
+
+impl<'a> DataWidget<'a> {
+    fn draw_label(self, ui: &mut Ui, mut rect: Rect, hovered: bool) {
         let font_id = FontId::new(12.5, Proportional);
+        if hovered {
+            rect.min.x += HOVER_ZOOMING;
+            rect.min.y += HOVER_ZOOMING;
+            rect.max.x -= HOVER_ZOOMING;
+            rect.max.y -= HOVER_ZOOMING;
+        }
         let layout = ui.painter().layout(
             self.data.name.clone(),
             font_id,
@@ -50,8 +74,5 @@ impl<'a> Widget for DataWidget<'a> {
                 egui::Label::new(layout),
             );
         }
-
-        debug_assert!(!rect.any_nan());
-        ui.allocate_rect(rect, egui::Sense::hover())
     }
 }
