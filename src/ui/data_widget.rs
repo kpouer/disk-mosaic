@@ -51,6 +51,7 @@ impl<'a> Widget for DataWidget<'a> {
             );
         }
 
+        debug_assert!(!rect.any_nan());
         ui.allocate_rect(rect, egui::Sense::hover())
     }
 }

@@ -1,8 +1,10 @@
+use std::thread;
 use crate::data::Data;
 use crate::ui::data_widget::DataWidget;
 use egui::Widget;
 use rand::Rng;
 use treemap::TreemapLayout;
+use crate::task::Task;
 
 pub struct DiskAnalyzer {
     data: Vec<Data>,
@@ -11,16 +13,20 @@ pub struct DiskAnalyzer {
 
 impl Default for DiskAnalyzer {
     fn default() -> Self {
-        let mut rnd = rand::rng();
-        let mut data = vec![];
-        for i in 0..100 {
-            data.push(Data::new(format!("Item {}", i), rnd.random::<f64>()));
-        }
         let root = match home::home_dir() {
             None => "/".to_string(),
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
-        Self { data, root }
+        let root = "/Users/kpouer/dev/rust".to_string();
+        Self { data: Vec::new(), root }
+    }
+}
+
+impl DiskAnalyzer {
+    pub(crate) fn start(&mut self) {
+        let task = Task::new(self.root.clone());
+        let future = thread::spawn(move || task.run());
+        self.data = future.join().unwrap().children;
     }
 }
 
