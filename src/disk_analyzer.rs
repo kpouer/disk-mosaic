@@ -1,10 +1,9 @@
-use std::thread;
 use crate::data::Data;
-use crate::ui::data_widget::DataWidget;
-use egui::Widget;
-use rand::Rng;
-use treemap::TreemapLayout;
 use crate::task::Task;
+use std::thread;
+use egui::Widget;
+use treemap::TreemapLayout;
+use crate::ui::data_widget::DataWidget;
 
 pub struct DiskAnalyzer {
     data: Vec<Data>,
