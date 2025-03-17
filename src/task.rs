@@ -18,26 +18,23 @@ impl Task {
         let path = Path::new(&self.path);
         let (sender, receiver) = std::sync::mpsc::channel();
         let mut waiting = 0;
+        let sender = if self.is_root {
+            self.tx.clone()
+        } else {
+            sender.clone()
+        };
         if let Ok(iter) = path.read_dir() {
             for path in iter.flatten().map(|p| p.path()) {
+                waiting += 1;
                 if path.is_dir() {
-                    waiting += 1;
-                    let sender = if self.is_root {
-                        self.tx.clone()
-                    } else {
-                        sender.clone()
-                    };
+                    let sender = sender.clone();
                     Task::new(false, path.to_string_lossy().to_string(), sender).run();
                 } else {
-                    let data_file = Data::new_file(&path);
-                    data.children.push(data_file);
+                    sender.send(Data::new_file(&path)).unwrap();
                 }
             }
         } else {
-            println!(
-                "Error reading directory: {}",
-                path.to_string_lossy().to_string()
-            );
+            println!("Error reading directory: {path:?}");
         }
 
         if !self.is_root {
