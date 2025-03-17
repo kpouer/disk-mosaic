@@ -1,13 +1,16 @@
 use crate::data::Data;
 use crate::task::Task;
-use std::thread;
-use egui::Widget;
-use treemap::TreemapLayout;
 use crate::ui::data_widget::DataWidget;
+use egui::Widget;
+use std::thread;
+use std::time::Duration;
+use treemap::TreemapLayout;
 
 pub struct DiskAnalyzer {
-    data: Vec<Data>,
+    data: Data,
     root: String,
+    rx: std::sync::mpsc::Receiver<Data>,
+    tx: std::sync::mpsc::Sender<Data>,
 }
 
 impl Default for DiskAnalyzer {
@@ -17,20 +20,33 @@ impl Default for DiskAnalyzer {
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
         let root = "/Users/kpouer/dev/rust".to_string();
-        Self { data: Vec::new(), root }
+        let (tx, rx) = std::sync::mpsc::channel();
+        Self {
+            data: Data::default(),
+            root,
+            rx,
+            tx,
+        }
     }
 }
 
 impl DiskAnalyzer {
     pub(crate) fn start(&mut self) {
-        let task = Task::new(self.root.clone());
-        let future = thread::spawn(move || task.run());
-        self.data = future.join().unwrap().children;
+        let task = Task::new(true, self.root.clone(), self.tx.clone());
+        thread::spawn(move || task.run());
     }
 }
 
 impl eframe::App for DiskAnalyzer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut modified = false;
+        while let Ok(data) = self.rx.try_recv() {
+            self.data.children.push(data);
+            modified = true;
+        }
+        if modified {
+            self.data.compute_size();
+        }
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Root");
@@ -46,11 +62,12 @@ impl eframe::App for DiskAnalyzer {
                 clip_rect.width() as f64,
                 clip_rect.height() as f64,
             );
-            TreemapLayout::new().layout_items(&mut self.data, rect);
+            TreemapLayout::new().layout_items(&mut self.data.children, rect);
 
-            self.data.iter().for_each(|data| {
+            self.data.children.iter().for_each(|data| {
                 DataWidget::new(data).ui(ui);
             });
         });
+        ctx.request_repaint_after(Duration::from_millis(60))
     }
 }

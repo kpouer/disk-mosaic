@@ -1,7 +1,7 @@
 mod data;
 mod disk_analyzer;
-mod ui;
 mod task;
+mod ui;
 
 use disk_analyzer::DiskAnalyzer;
 

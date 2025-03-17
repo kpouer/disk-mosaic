@@ -1,6 +1,6 @@
-use std::path::Path;
 use egui::Color32;
 use rand::Rng;
+use std::path::Path;
 use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
@@ -45,9 +45,10 @@ impl Data {
 
     pub(crate) fn compute_size(&mut self) -> u64 {
         if self.kind == Kind::Dir {
-            self.size = self.children.iter_mut().fold(0, |acc, child| {
-                acc + child.compute_size()
-            });
+            self.size = self
+                .children
+                .iter_mut()
+                .fold(0, |acc, child| acc + child.compute_size());
         }
         self.size
     }
