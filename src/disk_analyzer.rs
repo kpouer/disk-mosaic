@@ -32,8 +32,9 @@ impl Default for DiskAnalyzer {
 
 impl DiskAnalyzer {
     pub(crate) fn start(&mut self) {
-        let task = Task::new(true, self.root.clone(), self.tx.clone());
-        thread::spawn(move || task.run());
+        let root = self.root.clone();
+        let tx = self.tx.clone();
+        thread::spawn(move || Task::scan_directory(&root, &tx));
     }
 }
 

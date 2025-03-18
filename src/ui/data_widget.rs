@@ -1,3 +1,4 @@
+use std::path::Path;
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
 use egui::{Color32, Pos2, Rect, Ui, Widget};
@@ -25,10 +26,10 @@ impl<'a> Widget for DataWidget<'a> {
                 (self.data.bounds.y + self.data.bounds.h) as f32,
             ),
         );
-        let response = ui.allocate_rect(rect, egui::Sense::hover());
-        let hovered = response.hovered();
+        let response = ui.allocate_rect(rect, egui::Sense::click());
+        let zoomed = response.hovered() || response.clicked();
 
-        if hovered {
+        if zoomed {
             rect.min.x -= HOVER_ZOOMING;
             rect.min.y -= HOVER_ZOOMING;
             rect.max.x += HOVER_ZOOMING;
@@ -41,23 +42,25 @@ impl<'a> Widget for DataWidget<'a> {
             egui::Stroke::default(),
             egui::StrokeKind::Inside,
         );
-        self.draw_label(ui, rect, hovered);
+        self.draw_label(ui, rect, zoomed);
 
         response
     }
 }
 
 impl<'a> DataWidget<'a> {
-    fn draw_label(self, ui: &mut Ui, mut rect: Rect, hovered: bool) {
-        let font_id = FontId::new(12.5, Proportional);
-        if hovered {
+    fn draw_label(self, ui: &mut Ui, mut rect: Rect, zoomed: bool) {
+        let font_id = FontId::new(18.0, Proportional);
+        if zoomed {
             rect.min.x += HOVER_ZOOMING;
             rect.min.y += HOVER_ZOOMING;
             rect.max.x -= HOVER_ZOOMING;
             rect.max.y -= HOVER_ZOOMING;
         }
+        let path = Path::new(&self.data.name);
+
         let layout = ui.painter().layout(
-            self.data.name.clone(),
+            path.file_name().unwrap().to_string_lossy().to_string(),
             font_id,
             Color32::BLACK,
             ui.available_width(),
