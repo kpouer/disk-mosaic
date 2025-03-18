@@ -64,10 +64,15 @@ impl eframe::App for DiskAnalyzer {
                 clip_rect.height() as f64,
             );
             TreemapLayout::new().layout_items(&mut self.data.children, rect);
-
-            self.data.children.iter().for_each(|data| {
-                DataWidget::new(data).ui(ui);
+            let mut clicked_data = None;
+            self.data.children.iter_mut().for_each(|data| {
+                if DataWidget::new(data).ui(ui).clicked() {
+                    clicked_data = Some(data);
+                }
             });
+            if let Some(clicked_data) = clicked_data {
+                self.data = std::mem::take(clicked_data);
+            }
         });
         ctx.request_repaint_after(Duration::from_millis(60))
     }
