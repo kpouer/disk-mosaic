@@ -5,7 +5,7 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    pub path: String,
+    path: std::path::PathBuf,
     size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,
@@ -24,7 +24,7 @@ impl Data {
     pub fn new_directory(name: String) -> Self {
         let mut rnd = rand::rng();
         Self {
-            path: name,
+            path: std::path::PathBuf::from(name),
             kind: Kind::Dir,
             color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
             ..Default::default()
@@ -35,12 +35,17 @@ impl Data {
         let file_size = path.metadata().unwrap().len();
         let mut rnd = rand::rng();
         Self {
-            path: path.to_string_lossy().to_string(),
+            path: path.to_path_buf(),
             kind: Kind::File,
             size: file_size,
             color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
             ..Default::default()
         }
+    }
+
+    pub fn file_name(&self) -> &str {
+        // todo : remove unwrap
+        self.path.file_name().unwrap().to_str().unwrap()
     }
 
     pub fn compute_size(&mut self) -> u64 {

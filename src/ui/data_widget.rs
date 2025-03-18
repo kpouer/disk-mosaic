@@ -1,7 +1,6 @@
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
 use egui::{Color32, Pos2, Rect, Ui, Widget};
-use std::path::Path;
 
 use crate::data::Data;
 
@@ -57,10 +56,10 @@ impl<'a> DataWidget<'a> {
             rect.max.x -= HOVER_ZOOMING;
             rect.max.y -= HOVER_ZOOMING;
         }
-        let path = Path::new(&self.data.path);
 
+        // todo : store Galley
         let layout = ui.painter().layout(
-            path.file_name().unwrap().to_string_lossy().to_string(),
+            self.data.file_name().to_string(),
             font_id,
             Color32::BLACK,
             ui.available_width(),
