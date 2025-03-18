@@ -1,7 +1,7 @@
-use std::path::Path;
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
 use egui::{Color32, Pos2, Rect, Ui, Widget};
+use std::path::Path;
 
 use crate::data::Data;
 
@@ -57,7 +57,7 @@ impl<'a> DataWidget<'a> {
             rect.max.x -= HOVER_ZOOMING;
             rect.max.y -= HOVER_ZOOMING;
         }
-        let path = Path::new(&self.data.name);
+        let path = Path::new(&self.data.path);
 
         let layout = ui.painter().layout(
             path.file_name().unwrap().to_string_lossy().to_string(),

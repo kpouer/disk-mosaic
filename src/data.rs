@@ -5,7 +5,7 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    pub name: String,
+    pub path: String,
     size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,
@@ -24,7 +24,7 @@ impl Data {
     pub fn new_directory(name: String) -> Self {
         let mut rnd = rand::rng();
         Self {
-            name,
+            path: name,
             kind: Kind::Dir,
             color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
             ..Default::default()
@@ -35,7 +35,7 @@ impl Data {
         let file_size = path.metadata().unwrap().len();
         let mut rnd = rand::rng();
         Self {
-            name: path.to_string_lossy().to_string(),
+            path: path.to_string_lossy().to_string(),
             kind: Kind::File,
             size: file_size,
             color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
