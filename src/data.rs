@@ -43,6 +43,10 @@ impl Data {
         }
     }
 
+    pub(crate) fn push(&mut self, child: Data) {
+        self.children.push(child);
+    }
+
     pub fn file_name(&self) -> &str {
         // todo : remove unwrap
         self.path.file_name().unwrap().to_str().unwrap()

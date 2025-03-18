@@ -45,7 +45,7 @@ impl eframe::App for DiskAnalyzer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut modified = false;
         while let Ok(data) = self.rx.try_recv() {
-            self.data.children.push(data);
+            self.data.push(data);
             modified = true;
         }
         if modified {
