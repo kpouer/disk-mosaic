@@ -2,17 +2,17 @@ use crate::data::Data;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
-pub(crate) struct Task {
+pub struct Task {
     path: String,
     tx: Sender<Data>,
 }
 
 impl Task {
-    pub(crate) fn new(path: String, tx: Sender<Data>) -> Self {
+    pub fn new(path: String, tx: Sender<Data>) -> Self {
         Self { path, tx }
     }
 
-    pub(crate) fn run(&self) {
+    pub fn run(&self) {
         let mut data = Data::new_directory(self.path.clone());
         let (sender, receiver) = std::sync::mpsc::channel();
         let mut waiting = Self::scan_directory(&self.path, &sender);
@@ -27,7 +27,7 @@ impl Task {
         self.tx.send(data).unwrap();
     }
 
-    pub(crate) fn scan_directory(path: &str, sender: &Sender<Data>) -> usize {
+    pub fn scan_directory(path: &str, sender: &Sender<Data>) -> usize {
         let path = Path::new(path);
         let mut waiting = 0;
         if let Ok(iter) = path.read_dir() {

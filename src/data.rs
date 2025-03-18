@@ -5,16 +5,16 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    pub(crate) name: String,
+    pub name: String,
     size: u64,
-    pub(crate) bounds: treemap::Rect,
-    pub(crate) color: Color32,
-    pub(crate) children: Vec<Data>,
-    pub(crate) kind: Kind,
+    pub bounds: treemap::Rect,
+    pub color: Color32,
+    pub children: Vec<Data>,
+    pub kind: Kind,
 }
 
 #[derive(Default, Debug, PartialEq)]
-pub(crate) enum Kind {
+pub enum Kind {
     #[default]
     Dir,
     File,
@@ -43,7 +43,7 @@ impl Data {
         }
     }
 
-    pub(crate) fn compute_size(&mut self) -> u64 {
+    pub fn compute_size(&mut self) -> u64 {
         if self.kind == Kind::Dir {
             self.size = self
                 .children

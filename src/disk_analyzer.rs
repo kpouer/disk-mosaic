@@ -1,7 +1,9 @@
 use crate::data::Data;
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
+use crate::ui::path_bar::PathBar;
 use egui::Widget;
+use std::path::Path;
 use std::thread;
 use std::time::Duration;
 use treemap::TreemapLayout;
@@ -31,7 +33,7 @@ impl Default for DiskAnalyzer {
 }
 
 impl DiskAnalyzer {
-    pub(crate) fn start(&mut self) {
+    pub fn start(&mut self) {
         let root = self.root.clone();
         let tx = self.tx.clone();
         thread::spawn(move || Task::scan_directory(&root, &tx));
@@ -55,6 +57,12 @@ impl eframe::App for DiskAnalyzer {
             });
         });
 
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            let path = Path::new(&self.root);
+            let parents = path.ancestors();
+            PathBar::new(parents).show(ui);
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             let clip_rect = ui.clip_rect();
             let rect = treemap::Rect::from_points(
@@ -66,7 +74,7 @@ impl eframe::App for DiskAnalyzer {
             TreemapLayout::new().layout_items(&mut self.data.children, rect);
             let mut clicked_data = None;
             self.data.children.iter_mut().for_each(|data| {
-                if DataWidget::new(data).ui(ui).clicked() {
+                if DataWidget::new(data).ui(ui).double_clicked() {
                     clicked_data = Some(data);
                 }
             });
