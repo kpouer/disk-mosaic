@@ -4,6 +4,7 @@ use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
 use egui::Widget;
 use std::path::Path;
+use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use treemap::TreemapLayout;
@@ -34,7 +35,7 @@ impl Default for DiskAnalyzer {
 
 impl DiskAnalyzer {
     pub fn start(&mut self) {
-        let root = self.root.clone();
+        let root = PathBuf::from(&self.root);
         let tx = self.tx.clone();
         thread::spawn(move || Task::scan_directory(&root, &tx));
     }
