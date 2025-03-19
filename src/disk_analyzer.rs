@@ -27,7 +27,7 @@ impl Default for DiskAnalyzer {
         let root = "/Users/kpouer/dev/rust".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
-            data: Data::new_directory(root.clone()),
+            data: Data::new_directory(PathBuf::from(&root)),
             root,
             rx,
             tx,
@@ -39,7 +39,7 @@ impl Default for DiskAnalyzer {
 impl DiskAnalyzer {
     pub fn start(&mut self) {
         let root = PathBuf::from(&self.root);
-        self.data = Data::new_directory(self.root.clone());
+        self.data = Data::new_directory(root.clone());
         let tx = self.tx.clone();
         let stopper = Arc::new(AtomicBool::new(false));
         self.stopper = Some(stopper.clone());

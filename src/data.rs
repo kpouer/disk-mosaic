@@ -1,6 +1,6 @@
 use egui::Color32;
 use rand::Rng;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
@@ -21,10 +21,10 @@ pub enum Kind {
 }
 
 impl Data {
-    pub fn new_directory(name: String) -> Self {
+    pub fn new_directory(path: PathBuf) -> Self {
         let mut rnd = rand::rng();
         Self {
-            path: std::path::PathBuf::from(name),
+            path,
             kind: Kind::Dir,
             color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
             ..Default::default()

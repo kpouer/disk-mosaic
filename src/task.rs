@@ -19,7 +19,7 @@ impl Task {
     }
 
     pub fn run(&self) {
-        let mut data = Data::new_directory(self.path.to_string_lossy().to_string());
+        let mut data = Data::new_directory(self.path.clone());
         let (sender, receiver) = std::sync::mpsc::channel();
         let mut waiting = Self::scan_directory(&self.path, &sender, &self.stopper);
 
