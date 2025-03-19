@@ -13,10 +13,11 @@ impl<'a> PathBar<'a> {
     pub(crate) fn show(&self, ui: &mut Ui) -> Option<&Path> {
         let mut ret = None;
         ui.horizontal(|ui| {
-            for parent in self.parents {
+            let parents: Vec<&Path> = self.parents.collect();
+            for parent in parents.into_iter().rev() {
                 if let Some(parent_name) = parent.file_name() {
                     if ui
-                        .button(format!("/{}", parent.to_string_lossy().to_string()))
+                        .button(format!("/{}", parent_name.to_string_lossy().to_string()))
                         .clicked()
                     {
                         ret = Some(parent);

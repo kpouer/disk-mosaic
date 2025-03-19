@@ -5,7 +5,7 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    path: std::path::PathBuf,
+    pub path: std::path::PathBuf,
     size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,

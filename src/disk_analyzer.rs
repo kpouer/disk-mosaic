@@ -3,8 +3,9 @@ use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
 use egui::Widget;
-use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use treemap::TreemapLayout;
@@ -14,6 +15,7 @@ pub struct DiskAnalyzer {
     root: String,
     rx: std::sync::mpsc::Receiver<Data>,
     tx: std::sync::mpsc::Sender<Data>,
+    stopper: Option<Arc<AtomicBool>>,
 }
 
 impl Default for DiskAnalyzer {
@@ -25,10 +27,11 @@ impl Default for DiskAnalyzer {
         let root = "/Users/kpouer/dev/rust".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
-            data: Data::default(),
+            data: Data::new_directory(root.clone()),
             root,
             rx,
             tx,
+            stopper: None,
         }
     }
 }
@@ -36,8 +39,11 @@ impl Default for DiskAnalyzer {
 impl DiskAnalyzer {
     pub fn start(&mut self) {
         let root = PathBuf::from(&self.root);
+        self.data = Data::new_directory(self.root.clone());
         let tx = self.tx.clone();
-        thread::spawn(move || Task::scan_directory(&root, &tx));
+        let stopper = Arc::new(AtomicBool::new(false));
+        self.stopper = Some(stopper.clone());
+        thread::spawn(move || Task::scan_directory(&root, &tx, &stopper));
     }
 }
 
@@ -54,13 +60,17 @@ impl eframe::App for DiskAnalyzer {
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Root");
-                ui.text_edit_singleline(&mut self.root);
+                if ui.text_edit_singleline(&mut self.root).changed() {
+                    if let Some(stopper) = &self.stopper {
+                        stopper.store(true, Ordering::Relaxed);
+                        self.start();
+                    }
+                }
             });
         });
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            let path = Path::new(&self.root);
-            let parents = path.ancestors();
+            let parents = self.data.path.ancestors();
             PathBar::new(parents).show(ui);
         });
 
