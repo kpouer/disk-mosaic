@@ -6,6 +6,7 @@ use egui::Widget;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 use treemap::TreemapLayout;
@@ -13,8 +14,8 @@ use treemap::TreemapLayout;
 pub struct DiskAnalyzer {
     data: Data,
     root: String,
-    rx: std::sync::mpsc::Receiver<Data>,
-    tx: std::sync::mpsc::Sender<Data>,
+    rx: Receiver<Data>,
+    tx: Sender<Data>,
     stopper: Option<Arc<AtomicBool>>,
 }
 
