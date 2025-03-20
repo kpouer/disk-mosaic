@@ -3,6 +3,7 @@ use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
 use egui::Widget;
+use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -44,7 +45,10 @@ impl DiskAnalyzer {
         let tx = self.tx.clone();
         let stopper = Arc::new(AtomicBool::new(false));
         self.stopper = Some(stopper.clone());
-        thread::spawn(move || Task::scan_directory(&root, &tx, &stopper));
+        thread::spawn(move || {
+            Task::scan_directory(&root, &tx, &stopper);
+            info!("Done");
+        });
     }
 }
 

@@ -5,7 +5,7 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    pub path: std::path::PathBuf,
+    pub path: PathBuf,
     size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,
@@ -32,7 +32,10 @@ impl Data {
     }
 
     pub fn new_file(path: &Path) -> Self {
-        let file_size = path.metadata().unwrap().len();
+        let file_size = path
+            .metadata()
+            .map(|metadata| metadata.len())
+            .unwrap_or_else(|e| 0);
         let mut rnd = rand::rng();
         Self {
             path: path.to_path_buf(),

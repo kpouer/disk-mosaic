@@ -3,6 +3,7 @@ use std::path::Path;
 use std::sync::mpsc::Sender;
 
 use log::info;
+use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -34,24 +35,25 @@ impl Task {
     }
 
     pub fn scan_directory(path: &Path, sender: &Sender<Data>, stopper: &Arc<AtomicBool>) -> usize {
-        let mut waiting = 0;
         if let Ok(iter) = path.read_dir() {
-            for path in iter.flatten().map(|p| p.path()) {
+            let vec = iter.collect::<Vec<_>>();
+            let ret = vec.len();
+            vec.par_iter().flatten().map(|p| p.path()).for_each(|path| {
                 if stopper.load(Ordering::Relaxed) {
                     info!("Stop requested");
-                    break;
+                    return;
                 }
-                waiting += 1;
                 if path.is_dir() {
                     let sender = sender.clone();
                     Task::new(path, sender, stopper.clone()).run();
                 } else {
                     sender.send(Data::new_file(&path)).unwrap();
                 }
-            }
+            });
+            ret
         } else {
             println!("Error reading directory: {path:?}");
+            0
         }
-        waiting
     }
 }
