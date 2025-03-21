@@ -20,9 +20,10 @@ impl<'a> Task<'a> {
     }
 
     pub fn run(self) {
-        let mut data = Data::new_directory(self.path);
+        let Self { path, tx, stopper } = self;
+        let mut data = Data::new_directory(path);
         let (sender, receiver) = std::sync::mpsc::channel();
-        let mut waiting = Self::scan_directory(&data.path, &sender, self.stopper);
+        let mut waiting = Self::scan_directory(&data.path, &sender, stopper);
 
         while waiting > 0 {
             if let Ok(d) = receiver.recv() {
@@ -31,7 +32,7 @@ impl<'a> Task<'a> {
             }
         }
         data.compute_size();
-        self.tx.send(data).unwrap();
+        tx.send(data).unwrap();
     }
 
     pub fn scan_directory(path: &Path, sender: &Sender<Data>, stopper: &Arc<AtomicBool>) -> usize {
