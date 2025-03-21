@@ -8,7 +8,7 @@ use disk_analyzer::DiskAnalyzer;
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "Mon application",
+        "Disk Analyzer",
         options,
         Box::new(|ctx| {
             egui_solarized::install(&ctx.egui_ctx);
