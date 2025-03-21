@@ -38,7 +38,7 @@ impl Widget for DataWidget<'_> {
             rect,
             egui::epaint::CornerRadius::ZERO,
             self.data.color,
-            egui::Stroke::default(),
+            egui::Stroke::new(1.0, Color32::BLACK),
             egui::StrokeKind::Inside,
         );
         self.draw_label(ui, rect, zoomed);
