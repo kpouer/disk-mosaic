@@ -29,10 +29,7 @@ impl Widget for DataWidget<'_> {
         let zoomed = response.hovered() || response.clicked();
 
         if zoomed {
-            rect.min.x -= HOVER_ZOOMING;
-            rect.min.y -= HOVER_ZOOMING;
-            rect.max.x += HOVER_ZOOMING;
-            rect.max.y += HOVER_ZOOMING;
+            rect = rect.expand(HOVER_ZOOMING);
         }
         ui.painter().rect(
             rect,
@@ -51,13 +48,9 @@ impl DataWidget<'_> {
     fn draw_label(self, ui: &mut Ui, mut rect: Rect, zoomed: bool) {
         let font_id = FontId::new(18.0, Proportional);
         if zoomed {
-            rect.min.x += HOVER_ZOOMING;
-            rect.min.y += HOVER_ZOOMING;
-            rect.max.x -= HOVER_ZOOMING;
-            rect.max.y -= HOVER_ZOOMING;
+            rect = rect.shrink(HOVER_ZOOMING);
         }
 
-        // todo : store Galley
         let layout = ui.painter().layout(
             self.data.file_name().to_string(),
             font_id,
