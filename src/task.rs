@@ -8,21 +8,21 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-pub struct Task {
+pub struct Task<'a> {
     path: PathBuf,
-    tx: Sender<Data>,
-    stopper: Arc<AtomicBool>,
+    tx: &'a Sender<Data>,
+    stopper: &'a Arc<AtomicBool>,
 }
 
-impl Task {
-    pub fn new(path: PathBuf, tx: Sender<Data>, stopper: Arc<AtomicBool>) -> Self {
+impl<'a> Task<'a> {
+    pub fn new(path: PathBuf, tx: &'a Sender<Data>, stopper: &'a Arc<AtomicBool>) -> Self {
         Self { path, tx, stopper }
     }
 
-    pub fn run(&self) {
-        let mut data = Data::new_directory(self.path.clone());
+    pub fn run(self) {
+        let mut data = Data::new_directory(self.path);
         let (sender, receiver) = std::sync::mpsc::channel();
-        let mut waiting = Self::scan_directory(&self.path, &sender, &self.stopper);
+        let mut waiting = Self::scan_directory(&data.path, &sender, self.stopper);
 
         while waiting > 0 {
             if let Ok(d) = receiver.recv() {
@@ -44,8 +44,7 @@ impl Task {
                     return;
                 }
                 if path.is_dir() {
-                    let sender = sender.clone();
-                    Task::new(path, sender, stopper.clone()).run();
+                    Task::new(path, sender, stopper).run();
                 } else {
                     sender.send(Data::new_file(&path)).unwrap();
                 }
