@@ -89,11 +89,15 @@ impl eframe::App for DiskAnalyzer {
             );
             TreemapLayout::new().layout_items(&mut self.data.children, rect);
             let mut clicked_data = None;
-            self.data.children.iter_mut().for_each(|data| {
-                if DataWidget::new(data).ui(ui).double_clicked() {
-                    clicked_data = Some(data);
-                }
-            });
+            self.data
+                .children
+                .iter_mut()
+                .filter(|data| data.bounds.w > 0.0 && data.bounds.h > 0.0)
+                .for_each(|data| {
+                    if DataWidget::new(data).ui(ui).double_clicked() {
+                        clicked_data = Some(data);
+                    }
+                });
             if let Some(clicked_data) = clicked_data {
                 self.data = std::mem::take(clicked_data);
             }
