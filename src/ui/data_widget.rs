@@ -16,11 +16,11 @@ impl<'a> DataWidget<'a> {
 
 const HOVER_ZOOMING: f32 = 10.0;
 
-impl<'a> Widget for DataWidget<'a> {
+impl Widget for DataWidget<'_> {
     fn ui(self, ui: &mut Ui) -> egui::Response {
         let mut rect = Rect::from_min_max(
-            egui::emath::Pos2::new(self.data.bounds.x as f32, self.data.bounds.y as f32),
-            egui::emath::Pos2::new(
+            Pos2::new(self.data.bounds.x as f32, self.data.bounds.y as f32),
+            Pos2::new(
                 (self.data.bounds.x + self.data.bounds.w) as f32,
                 (self.data.bounds.y + self.data.bounds.h) as f32,
             ),
@@ -47,7 +47,7 @@ impl<'a> Widget for DataWidget<'a> {
     }
 }
 
-impl<'a> DataWidget<'a> {
+impl DataWidget<'_> {
     fn draw_label(self, ui: &mut Ui, mut rect: Rect, zoomed: bool) {
         let font_id = FontId::new(18.0, Proportional);
         if zoomed {

@@ -10,7 +10,8 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Mon application",
         options,
-        Box::new(|_| {
+        Box::new(|ctx| {
+            egui_solarized::install(&ctx.egui_ctx);
             let mut disk_analyzer = DiskAnalyzer::default();
             disk_analyzer.start();
             Ok(Box::new(disk_analyzer))

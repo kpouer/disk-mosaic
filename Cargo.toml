@@ -11,3 +11,4 @@ rand = "0.9.0"
 treemap = "0.3.2"
 log = "0.4.26"
 rayon = "1.10.0"
+egui_solarized = { path = "../egui-solarized" }

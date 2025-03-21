@@ -1,6 +1,7 @@
 use egui::Color32;
-use rand::Rng;
+use log::warn;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
@@ -20,30 +21,39 @@ pub enum Kind {
     File,
 }
 
+static INDEX: AtomicUsize = AtomicUsize::new(0);
+
 impl Data {
     pub fn new_directory(path: PathBuf) -> Self {
-        let mut rnd = rand::rng();
         Self {
             path,
             kind: Kind::Dir,
-            color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
+            color: Self::next_color(),
             ..Default::default()
         }
     }
 
     pub fn new_file(path: &Path) -> Self {
-        let file_size = path
-            .metadata()
-            .map(|metadata| metadata.len())
-            .unwrap_or_else(|e| 0);
-        let mut rnd = rand::rng();
+        let file_size = path.metadata().map(|metadata| metadata.len()).unwrap_or(0);
         Self {
             path: path.to_path_buf(),
             kind: Kind::File,
             size: file_size,
-            color: Color32::from_rgb(rnd.random::<u8>(), rnd.random::<u8>(), rnd.random::<u8>()),
+            color: Self::next_color(),
             ..Default::default()
         }
+    }
+
+    fn next_color() -> Color32 {
+        let idx = INDEX
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
+                Some((v + 1) % egui_solarized::ACCENT_COLORS.len())
+            })
+            .unwrap_or_else(|e| {
+                warn!("AtomicUsize error: {}", e);
+                egui_solarized::ACCENT_COLORS.len()
+            });
+        egui_solarized::ACCENT_COLORS[idx]
     }
 
     pub(crate) fn push(&mut self, child: Data) {
@@ -51,8 +61,7 @@ impl Data {
     }
 
     pub fn file_name(&self) -> &str {
-        // todo : remove unwrap
-        self.path.file_name().unwrap().to_str().unwrap()
+        self.path.file_name().unwrap().to_str().unwrap_or("")
     }
 
     pub fn compute_size(&mut self) -> u64 {

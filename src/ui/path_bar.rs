@@ -17,7 +17,7 @@ impl<'a> PathBar<'a> {
             for parent in parents.into_iter().rev() {
                 if let Some(parent_name) = parent.file_name() {
                     if ui
-                        .button(format!("/{}", parent_name.to_string_lossy().to_string()))
+                        .button(format!("/{}", parent_name.to_string_lossy()))
                         .clicked()
                     {
                         ret = Some(parent);
