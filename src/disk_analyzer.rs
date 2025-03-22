@@ -26,7 +26,7 @@ impl Default for DiskAnalyzer {
             None => "/".to_string(),
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
-        let root = "/Users/kpouer/dev/rust".to_string();
+        // let root = "/Users/kpouer/dev/rust".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
             data: Data::new_directory(PathBuf::from(&root)),
@@ -55,10 +55,10 @@ impl DiskAnalyzer {
 impl eframe::App for DiskAnalyzer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut modified = false;
-        while let Ok(data) = self.rx.try_recv() {
+        self.rx.try_iter().for_each(|data| {
             self.data.push(data);
             modified = true;
-        }
+        });
         if modified {
             self.data.compute_size();
         }
