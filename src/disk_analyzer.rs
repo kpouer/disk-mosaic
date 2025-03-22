@@ -2,7 +2,7 @@ use crate::data::Data;
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
-use egui::Widget;
+use egui::{ProgressBar, Widget};
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -18,6 +18,7 @@ pub struct DiskAnalyzer {
     rx: Receiver<Data>,
     tx: Sender<Data>,
     stopper: Option<Arc<AtomicBool>>,
+    handle: Option<thread::JoinHandle<()>>,
 }
 
 impl Default for DiskAnalyzer {
@@ -26,7 +27,7 @@ impl Default for DiskAnalyzer {
             None => "/".to_string(),
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
-        // let root = "/Users/kpouer/dev/rust".to_string();
+        let root = "/Users/kpouer/dev/".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
             data: Data::new_directory(PathBuf::from(&root)),
@@ -34,6 +35,7 @@ impl Default for DiskAnalyzer {
             rx,
             tx,
             stopper: None,
+            handle: None,
         }
     }
 }
@@ -45,10 +47,11 @@ impl DiskAnalyzer {
         let tx = self.tx.clone();
         let stopper = Arc::new(AtomicBool::new(false));
         self.stopper = Some(stopper.clone());
-        thread::spawn(move || {
+        self.handle = Some(thread::spawn(move || {
+            let start = std::time::Instant::now();
             Task::scan_directory(&root, &tx, &stopper);
-            info!("Done");
-        });
+            info!("Done in {}s", start.elapsed().as_millis());
+        }));
     }
 }
 
@@ -75,8 +78,18 @@ impl eframe::App for DiskAnalyzer {
         });
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            let parents = self.data.path.ancestors();
-            PathBar::new(parents).show(ui);
+            if let Some(handle) = &self.handle {
+                if handle.is_finished() {
+                    self.handle = None;
+                }
+            }
+            if self.handle.is_some() {
+                let progress = ProgressBar::new(0.0).animate(true);
+                ui.add(progress);
+            } else {
+                let parents = self.data.path.ancestors();
+                PathBar::new(parents).show(ui);
+            }
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
