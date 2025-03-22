@@ -1,8 +1,9 @@
 use crate::data::Data;
+use std::io::ErrorKind;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
-use log::info;
+use log::{debug, info, warn};
 use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -36,24 +37,30 @@ impl<'a> Task<'a> {
     }
 
     pub fn scan_directory(path: &Path, sender: &Sender<Data>, stopper: &Arc<AtomicBool>) -> usize {
-        if let Ok(iter) = path.read_dir() {
-            let vec = iter.collect::<Vec<_>>();
-            let ret = vec.len();
-            vec.par_iter().flatten().map(|p| p.path()).for_each(|path| {
-                if stopper.load(Ordering::Relaxed) {
-                    info!("Stop requested");
-                    return;
+        match path.read_dir() {
+            Ok(iter) => {
+                let vec = iter.collect::<Vec<_>>();
+                let ret = vec.len();
+                vec.par_iter().flatten().map(|p| p.path()).for_each(|path| {
+                    if stopper.load(Ordering::Relaxed) {
+                        info!("Stop requested");
+                        return;
+                    }
+                    if path.is_dir() {
+                        Task::new(path, sender, stopper).run();
+                    } else {
+                        sender.send(Data::new_file(&path)).unwrap();
+                    }
+                });
+                ret
+            }
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::PermissionDenied => {}
+                    _ => debug!("Error reading directory: {path:?}, {e:?}"),
                 }
-                if path.is_dir() {
-                    Task::new(path, sender, stopper).run();
-                } else {
-                    sender.send(Data::new_file(&path)).unwrap();
-                }
-            });
-            ret
-        } else {
-            println!("Error reading directory: {path:?}");
-            0
+                0
+            }
         }
     }
 }
