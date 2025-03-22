@@ -6,6 +6,7 @@ mod ui;
 use disk_analyzer::DiskAnalyzer;
 
 fn main() -> eframe::Result {
+    env_logger::init();
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "Disk Analyzer",
