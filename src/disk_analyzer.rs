@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
-use treemap::TreemapLayout;
+use treemap::{Mappable, TreemapLayout};
 
 pub struct DiskAnalyzer {
     data: Data,
@@ -58,10 +58,13 @@ impl DiskAnalyzer {
 impl eframe::App for DiskAnalyzer {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let mut modified = false;
-        self.rx.try_iter().for_each(|data| {
-            self.data.push(data);
-            modified = true;
-        });
+        self.rx
+            .try_iter()
+            .filter(|data| data.size() > 0.0)
+            .for_each(|data| {
+                self.data.push(data);
+                modified = true;
+            });
         if modified {
             self.data.compute_size();
         }
