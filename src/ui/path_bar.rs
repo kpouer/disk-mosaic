@@ -13,6 +13,8 @@ impl<'a> PathBar<'a> {
     pub(crate) fn show(&self, ui: &mut Ui) -> Option<&Path> {
         let mut ret = None;
         ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 0.0;
+            ui.spacing_mut().item_spacing.y = 0.0;
             let parents: Vec<&Path> = self.parents.collect();
             for parent in parents.into_iter().rev() {
                 if let Some(parent_name) = parent.file_name() {

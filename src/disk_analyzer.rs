@@ -2,7 +2,7 @@ use crate::data::Data;
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
-use egui::{ProgressBar, Widget};
+use egui::{Context, ProgressBar, Widget};
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,33 +53,8 @@ impl DiskAnalyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
     }
-}
 
-impl eframe::App for DiskAnalyzer {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut modified = false;
-        self.rx
-            .try_iter()
-            .filter(|data| data.size() > 0.0)
-            .for_each(|data| {
-                self.data.push(data);
-                modified = true;
-            });
-        if modified {
-            self.data.compute_size();
-        }
-        egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Root");
-                if ui.text_edit_singleline(&mut self.root).changed() {
-                    if let Some(stopper) = &self.stopper {
-                        stopper.store(true, Ordering::Relaxed);
-                        self.start();
-                    }
-                }
-            });
-        });
-
+    fn show_top_panel(&mut self, ctx: &Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             if let Some(handle) = &self.handle {
                 if handle.is_finished() {
@@ -94,7 +69,23 @@ impl eframe::App for DiskAnalyzer {
                 PathBar::new(parents).show(ui);
             }
         });
+    }
 
+    fn show_left_panel(&mut self, ctx: &Context) {
+        egui::SidePanel::left("left_panel").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Root");
+                if ui.text_edit_singleline(&mut self.root).changed() {
+                    if let Some(stopper) = &self.stopper {
+                        stopper.store(true, Ordering::Relaxed);
+                        self.start();
+                    }
+                }
+            });
+        });
+    }
+
+    fn show_central_panel(&mut self, ctx: &Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let clip_rect = ui.clip_rect();
             let rect = treemap::Rect::from_points(
@@ -118,6 +109,26 @@ impl eframe::App for DiskAnalyzer {
                 self.data = std::mem::take(clicked_data);
             }
         });
+    }
+}
+
+impl eframe::App for DiskAnalyzer {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut modified = false;
+        self.rx
+            .try_iter()
+            .filter(|data| data.size() > 0.0)
+            .for_each(|data| {
+                self.data.push(data);
+                modified = true;
+            });
+        if modified {
+            self.data.compute_size();
+        }
+        self.show_left_panel(ctx);
+        self.show_top_panel(ctx);
+
+        self.show_central_panel(ctx);
         ctx.request_repaint_after(Duration::from_millis(60))
     }
 }

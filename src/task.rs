@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
-use log::{debug, info, warn};
+use log::{debug, info};
 use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
