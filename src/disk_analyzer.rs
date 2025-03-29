@@ -27,7 +27,7 @@ impl Default for DiskAnalyzer {
             None => "/".to_string(),
             Some(home) => home.as_path().to_string_lossy().to_string(),
         };
-        let root = "/Users/kpouer/dev/rust".to_string();
+        let root = "/Users/kpouer/".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
             data: Data::new_directory(PathBuf::from(&root)),

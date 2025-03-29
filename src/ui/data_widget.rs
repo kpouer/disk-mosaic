@@ -86,7 +86,7 @@ impl DataWidget<'_> {
                 Rect::from_min_size(
                     rect.min
                         + Vec2::new(
-                            FONT_SIZE + 2.0 * ui.spacing().item_spacing.x,
+                            ui.spacing().item_spacing.x * 2.0 + FONT_SIZE,
                             ui.spacing().item_spacing.y,
                         ),
                     galley_name.rect.size(),
@@ -118,7 +118,9 @@ impl Widget for DataSize<'_> {
             LABEL_COLOR,
             ui.available_width(),
         );
-        if galley_size.rect.width() < self.rect.width() {
+        if galley_size.rect.width() < self.rect.width()
+            || self.rect.height() < FONT_SIZE * 2.0 + ui.spacing().item_spacing.y * 3.0
+        {
             ui.put(
                 Rect::from_min_max(
                     Pos2::new(
