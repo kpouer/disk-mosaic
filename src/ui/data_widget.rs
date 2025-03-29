@@ -1,7 +1,7 @@
-use crate::data::Data;
+use crate::data::{Data, Kind};
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
-use egui::{Color32, Pos2, Rect, Ui, Widget};
+use egui::{Color32, Image, Pos2, Rect, Response, Ui, Vec2, Widget, include_image};
 use humansize::DECIMAL;
 use treemap::Mappable;
 
@@ -54,6 +54,27 @@ impl DataWidget<'_> {
             rect = rect.shrink(HOVER_ZOOMING);
         }
 
+        if rect.size().x < FONT_SIZE + 2.0 * ui.spacing().item_spacing.x
+            || rect.size().y < FONT_SIZE + 2.0 * ui.spacing().item_spacing.y
+        {
+            return;
+        }
+
+        let clip = ui.clip_rect();
+        ui.set_clip_rect(rect);
+
+        let image = match self.data.kind {
+            Kind::Dir => include_image!("../../assets/directory.svg"),
+            Kind::File => include_image!("../../assets/file.svg"),
+        };
+        Image::from(image).paint_at(
+            ui,
+            Rect::from_min_size(
+                rect.min + ui.spacing().item_spacing,
+                Vec2::new(FONT_SIZE, FONT_SIZE),
+            ),
+        );
+
         let galley_name = ui.painter().layout(
             self.data.file_name().into(),
             FONT,
@@ -63,29 +84,53 @@ impl DataWidget<'_> {
         if galley_name.rect.width() < rect.width() {
             ui.put(
                 Rect::from_min_size(
-                    rect.min + ui.spacing().item_spacing,
+                    rect.min
+                        + Vec2::new(
+                            FONT_SIZE + 2.0 * ui.spacing().item_spacing.x,
+                            ui.spacing().item_spacing.y,
+                        ),
                     galley_name.rect.size(),
                 ),
                 egui::Label::new(galley_name),
             );
-            let galley_size = ui.painter().layout(
-                humansize::format_size(self.data.size() as u64, DECIMAL),
-                FONT,
-                LABEL_COLOR,
-                ui.available_width(),
-            );
-            if galley_size.rect.width() < rect.width() {
-                ui.put(
-                    Rect::from_min_max(
-                        Pos2::new(
-                            rect.min.x + ui.spacing().item_spacing.x,
-                            rect.max.y - galley_size.rect.height() - ui.spacing().item_spacing.y,
-                        ),
-                        Pos2::new(rect.min.x + galley_size.rect.width(), rect.min.y),
+            DataSize::new(self.data, rect).ui(ui);
+        }
+        ui.set_clip_rect(clip);
+    }
+}
+
+struct DataSize<'a> {
+    data: &'a Data,
+    rect: Rect,
+}
+
+impl<'a> DataSize<'a> {
+    fn new(data: &'a Data, rect: Rect) -> Self {
+        Self { data, rect }
+    }
+}
+
+impl Widget for DataSize<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let galley_size = ui.painter().layout(
+            humansize::format_size(self.data.size() as u64, DECIMAL),
+            FONT,
+            LABEL_COLOR,
+            ui.available_width(),
+        );
+        if galley_size.rect.width() < self.rect.width() {
+            ui.put(
+                Rect::from_min_max(
+                    Pos2::new(
+                        self.rect.min.x + ui.spacing().item_spacing.x,
+                        self.rect.max.y - galley_size.rect.height() - ui.spacing().item_spacing.y,
                     ),
-                    egui::Label::new(galley_size),
-                );
-            }
+                    Pos2::new(self.rect.min.x + galley_size.rect.width(), self.rect.min.y),
+                ),
+                egui::Label::new(galley_size),
+            )
+        } else {
+            ui.response()
         }
     }
 }
