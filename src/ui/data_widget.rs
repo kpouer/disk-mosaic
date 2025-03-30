@@ -1,7 +1,7 @@
-use crate::data::{Data, Kind};
+use crate::data::Data;
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
-use egui::{Color32, Image, Pos2, Rect, Response, Ui, Vec2, Widget, include_image};
+use egui::{Color32, Image, Pos2, Rect, Response, Ui, Vec2, Widget};
 use humansize::DECIMAL;
 use treemap::Mappable;
 
@@ -43,7 +43,6 @@ impl Widget for DataWidget<'_> {
             egui::StrokeKind::Inside,
         );
         self.draw_label(ui, rect, zoomed);
-
         response
     }
 }
@@ -63,11 +62,7 @@ impl DataWidget<'_> {
         let clip = ui.clip_rect();
         ui.set_clip_rect(rect);
 
-        let image = match self.data.kind {
-            Kind::Dir => include_image!("../../assets/directory.svg"),
-            Kind::File => include_image!("../../assets/file.svg"),
-        };
-        Image::from(image).paint_at(
+        Image::from(self.data.kind.get_image()).paint_at(
             ui,
             Rect::from_min_size(
                 rect.min + ui.spacing().item_spacing,

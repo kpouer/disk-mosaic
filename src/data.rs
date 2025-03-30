@@ -1,4 +1,4 @@
-use egui::Color32;
+use egui::{Color32, ImageSource, include_image};
 use log::warn;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -19,6 +19,15 @@ pub enum Kind {
     #[default]
     Dir,
     File,
+}
+
+impl Kind {
+    pub fn get_image(&self) -> ImageSource {
+        match self {
+            Kind::Dir => include_image!("../assets/directory.svg"),
+            Kind::File => include_image!("../assets/file.svg"),
+        }
+    }
 }
 
 static INDEX: AtomicUsize = AtomicUsize::new(0);
