@@ -38,7 +38,7 @@ impl Analyzer {
         }
     }
 
-    pub(crate) fn show_result(&mut self, ctx: &Context) {
+    pub(crate) fn show(&mut self, ctx: &Context) {
         let mut modified = false;
         self.rx
             .try_iter()

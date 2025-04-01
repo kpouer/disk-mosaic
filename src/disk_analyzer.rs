@@ -25,7 +25,7 @@ impl eframe::App for DiskAnalyzerApp {
                     self.state = AppState::Analyzing(Analyzer::new(selected_path));
                 }
             }
-            AppState::Analyzing(analyzer) => analyzer.show_result(ctx),
+            AppState::Analyzing(analyzer) => analyzer.show(ctx),
             AppState::Error(message) => show_error(ctx, message),
         }
     }
