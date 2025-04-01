@@ -1,6 +1,7 @@
 use crate::analyzer::Analyzer;
 use crate::ui;
 use egui::Context;
+use log::info;
 
 #[derive(Default)]
 pub enum AppState {
@@ -20,6 +21,7 @@ impl eframe::App for DiskAnalyzerApp {
         match &mut self.state {
             AppState::SelectDisk => {
                 if let Some(selected_path) = ui::select_target::show(ctx) {
+                    info!("Selected path: {selected_path:?}");
                     self.state = AppState::Analyzing(Analyzer::new(selected_path));
                 }
             }
