@@ -8,7 +8,6 @@ pub enum AppState {
     #[default]
     SelectDisk,
     Analyzing(Analyzer),
-    Error(String),
 }
 
 #[derive(Default)]
@@ -26,13 +25,6 @@ impl eframe::App for DiskAnalyzerApp {
                 }
             }
             AppState::Analyzing(analyzer) => analyzer.show(ctx),
-            AppState::Error(message) => show_error(ctx, message),
         }
     }
-}
-
-fn show_error(ctx: &Context, error: &String) {
-    egui::CentralPanel::default().show(ctx, |ui| {
-        ui.label(error);
-    });
 }

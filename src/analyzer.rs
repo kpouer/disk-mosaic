@@ -12,9 +12,14 @@ use std::thread;
 use std::time::Duration;
 use treemap::{Mappable, TreemapLayout};
 
+pub enum Message {
+    Data(Data),
+    Finished,
+}
+
 pub struct Analyzer {
     data: Data,
-    rx: Receiver<Data>,
+    rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
 }
@@ -28,6 +33,7 @@ impl Analyzer {
         let handle = Some(thread::spawn(move || {
             let start = std::time::Instant::now();
             Task::scan_directory(&root_copy, &tx, &stopper_copy);
+            tx.send(Message::Finished).unwrap();
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
@@ -40,13 +46,20 @@ impl Analyzer {
 
     pub(crate) fn show(&mut self, ctx: &Context) {
         let mut modified = false;
-        self.rx
-            .try_iter()
-            .filter(|data| data.size() > 0.0)
-            .for_each(|data| {
-                self.data.push(data);
-                modified = true;
-            });
+        for message in self.rx.try_iter() {
+            match message {
+                Message::Data(data) => {
+                    if data.size() > 0.0 {
+                        self.data.push(data);
+                        modified = true;
+                    }
+                }
+                Message::Finished => {
+                    info!("Scan finished");
+                }
+            }
+        }
+
         if modified {
             self.data.compute_size();
         }

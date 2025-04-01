@@ -3,6 +3,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
+use crate::analyzer::Message;
 use log::{debug, info};
 use rayon::prelude::*;
 use std::path::PathBuf;
@@ -11,12 +12,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Task<'a> {
     path: PathBuf,
-    tx: &'a Sender<Data>,
+    tx: &'a Sender<Message>,
     stopper: &'a Arc<AtomicBool>,
 }
 
 impl<'a> Task<'a> {
-    pub fn new(path: PathBuf, tx: &'a Sender<Data>, stopper: &'a Arc<AtomicBool>) -> Self {
+    pub fn new(path: PathBuf, tx: &'a Sender<Message>, stopper: &'a Arc<AtomicBool>) -> Self {
         Self { path, tx, stopper }
     }
 
@@ -27,16 +28,27 @@ impl<'a> Task<'a> {
         let mut waiting = Self::scan_directory(&data.path, &sender, stopper);
 
         while waiting > 0 {
-            if let Ok(d) = receiver.recv() {
-                waiting -= 1;
-                data.children.push(d);
+            if let Ok(message) = receiver.recv() {
+                match message {
+                    Message::Data(d) => {
+                        waiting -= 1;
+                        data.children.push(d);
+                    }
+                    Message::Finished => {
+                        debug!("Finished");
+                    }
+                }
             }
         }
         data.compute_size();
-        tx.send(data).unwrap();
+        tx.send(Message::Data(data)).unwrap();
     }
 
-    pub fn scan_directory(path: &Path, sender: &Sender<Data>, stopper: &Arc<AtomicBool>) -> usize {
+    pub fn scan_directory(
+        path: &Path,
+        sender: &Sender<Message>,
+        stopper: &Arc<AtomicBool>,
+    ) -> usize {
         match path.read_dir() {
             Ok(iter) => {
                 let vec = iter.collect::<Vec<_>>();
@@ -49,7 +61,7 @@ impl<'a> Task<'a> {
                     if path.is_dir() {
                         Task::new(path, sender, stopper).run();
                     } else {
-                        sender.send(Data::new_file(&path)).unwrap();
+                        sender.send(Message::Data(Data::new_file(&path))).unwrap();
                     }
                 });
                 ret
