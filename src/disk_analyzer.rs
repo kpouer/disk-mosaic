@@ -1,5 +1,6 @@
 use crate::data::Data;
 use crate::task::Task;
+use crate::ui;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
 use egui::{Context, ProgressBar, Widget};
@@ -13,6 +14,7 @@ use std::time::Duration;
 use treemap::{Mappable, TreemapLayout};
 
 pub struct DiskAnalyzer {
+    state: AppState,
     data: Data,
     root: String,
     rx: Receiver<Data>,
@@ -30,6 +32,7 @@ impl Default for DiskAnalyzer {
         let root = "/Users/kpouer/".to_string();
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
+            state: AppState::SelectDisk,
             data: Data::new_directory(PathBuf::from(&root)),
             root,
             rx,
@@ -110,10 +113,8 @@ impl DiskAnalyzer {
             }
         });
     }
-}
 
-impl eframe::App for DiskAnalyzer {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn show_result(&mut self, ctx: &Context) {
         let mut modified = false;
         self.rx
             .try_iter()
@@ -131,4 +132,26 @@ impl eframe::App for DiskAnalyzer {
         self.show_central_panel(ctx);
         ctx.request_repaint_after(Duration::from_millis(60))
     }
+}
+
+impl eframe::App for DiskAnalyzer {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        match &self.state {
+            AppState::SelectDisk => if let Some(selected_path) = ui::select_target::show(ctx) {},
+            AppState::Analyzing => self.show_result(ctx),
+            AppState::Error(message) => show_error(ctx, message),
+        }
+    }
+}
+
+fn show_error(ctx: &Context, error: &String) {
+    egui::CentralPanel::default().show(ctx, |ui| {
+        ui.label(error);
+    });
+}
+
+pub enum AppState {
+    SelectDisk,
+    Analyzing,
+    Error(String),
 }

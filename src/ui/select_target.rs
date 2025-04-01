@@ -1,0 +1,58 @@
+use egui::{Context, ScrollArea};
+use humansize::DECIMAL;
+use std::path::PathBuf;
+use sysinfo::Disks;
+
+pub fn show(ctx: &Context) -> Option<PathBuf> {
+    egui::CentralPanel::default()
+        .show(ctx, |ui| {
+            let mut selected_path = None;
+            ui.heading("Select Scan Target");
+            ui.separator();
+
+            ui.label("Available Disks/Mounts:");
+
+            ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
+                let disks = Disks::new_with_refreshed_list();
+                if disks.is_empty() {
+                    ui.label("(No disks found by sysinfo)");
+                } else {
+                    for disk in &disks {
+                        let mount_point = disk.mount_point();
+                        let total = disk.total_space();
+                        let available = disk.available_space();
+                        let used = total.saturating_sub(available);
+
+                        let label = format!(
+                            "{} ({}) - Used: {} / Total: {} (Available: {})",
+                            disk.mount_point().display(),
+                            disk.name().to_string_lossy(),
+                            humansize::format_size(used, DECIMAL),
+                            humansize::format_size(total, DECIMAL),
+                            humansize::format_size(available, DECIMAL)
+                        );
+
+                        if ui.button(label).clicked() {
+                            selected_path = Some(mount_point.to_path_buf());
+                        }
+                    }
+                }
+            });
+
+            ui.separator();
+
+            if ui.button("Browse for Directory...").clicked() {
+                if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                    selected_path = Some(path);
+                }
+            }
+
+            if let Some(path) = &selected_path {
+                ui.separator();
+                ui.label(format!("Selected: {}", path.display()));
+            }
+
+            selected_path
+        })
+        .inner
+}
