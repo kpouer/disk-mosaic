@@ -7,7 +7,7 @@ use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 use treemap::{Mappable, TreemapLayout};
@@ -15,7 +15,6 @@ use treemap::{Mappable, TreemapLayout};
 pub struct Analyzer {
     data: Data,
     rx: Receiver<Data>,
-    tx: Sender<Data>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
 }
@@ -25,17 +24,15 @@ impl Analyzer {
         let (tx, rx) = std::sync::mpsc::channel();
         let stopper = Arc::new(AtomicBool::new(false));
         let root_copy = root.clone();
-        let tx_copy = tx.clone();
         let stopper_copy = stopper.clone();
         let handle = Some(thread::spawn(move || {
             let start = std::time::Instant::now();
-            Task::scan_directory(&root_copy, &tx_copy, &stopper_copy);
+            Task::scan_directory(&root_copy, &tx, &stopper_copy);
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
             data: Data::new_directory(root.clone()),
             rx,
-            tx,
             stopper: Some(stopper),
             handle,
         }
