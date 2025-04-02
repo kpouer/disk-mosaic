@@ -84,11 +84,15 @@ impl Data {
         &self.name
     }
 
-    pub fn compute_size(&mut self) -> u64 {
-        if self.kind == Kind::Dir {
-            self.size = self.children.iter().fold(0, |acc, x| acc + x.size);
+    pub fn set_nodes(&mut self, nodes: Vec<Data>) {
+        self.size = Self::compute_size(&nodes);
+        if self.depth < 2 {
+            self.children = nodes;
         }
-        self.size
+    }
+
+    fn compute_size(nodes: &Vec<Data>) -> u64 {
+        nodes.iter().fold(0, |acc, x| acc + x.size)
     }
 }
 

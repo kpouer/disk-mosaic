@@ -43,8 +43,7 @@ impl<'a> Task<'a> {
 
         match Self::scan_directory_recursive(&path, self.depth, stopper) {
             Ok(children) => {
-                data.children = children;
-                data.compute_size();
+                data.set_nodes(children);
             }
             Err(e) => {
                 warn!("Error scanning directory {:?}: {}", path, e);
@@ -93,8 +92,7 @@ impl<'a> Task<'a> {
                     match Self::scan_directory_recursive(&entry_path, depth + 1, stopper) {
                         Ok(grandchildren) => {
                             let mut dir_data = Data::new_directory(&entry_path, depth + 1);
-                            dir_data.children = grandchildren;
-                            dir_data.compute_size();
+                            dir_data.set_nodes(grandchildren);
                             Some(dir_data)
                         }
                         Err(e) => {
