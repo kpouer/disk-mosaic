@@ -1,11 +1,12 @@
 use egui::{Color32, ImageSource, include_image};
 use log::warn;
-use std::path::Path; // Removed PathBuf
+use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
+    depth: u16,
     pub name: String,
     pub size: u64,
     pub bounds: treemap::Rect,
@@ -33,8 +34,9 @@ impl Kind {
 static INDEX: AtomicUsize = AtomicUsize::new(0);
 
 impl Data {
-    pub fn new_directory(path: &Path) -> Self {
+    pub fn new_directory(path: &Path, depth: u16) -> Self {
         Self {
+            depth,
             name: Self::get_file_name(path),
             kind: Kind::Dir,
             color: Self::next_color(),
@@ -42,9 +44,10 @@ impl Data {
         }
     }
 
-    pub fn new_file(path: &Path) -> Self {
+    pub fn new_file(path: &Path, depth: u16) -> Self {
         let size = path.metadata().map(|metadata| metadata.len()).unwrap_or(0);
         Self {
+            depth,
             name: Self::get_file_name(path),
             kind: Kind::File,
             size,

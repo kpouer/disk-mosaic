@@ -11,23 +11,40 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Task<'a> {
+    /// the depth that will be set for the children of that task
+    depth: u16,
     path: PathBuf,
     tx: &'a Sender<Message>,
     stopper: &'a Arc<AtomicBool>,
 }
 
 impl<'a> Task<'a> {
-    pub fn new(path: PathBuf, tx: &'a Sender<Message>, stopper: &'a Arc<AtomicBool>) -> Self {
-        Self { path, tx, stopper }
+    pub fn new(
+        depth: u16,
+        path: PathBuf,
+        tx: &'a Sender<Message>,
+        stopper: &'a Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            depth,
+            path,
+            tx,
+            stopper,
+        }
     }
 
     pub fn run(self) {
-        let Self { path, tx, stopper } = self;
+        let Self {
+            depth,
+            path,
+            tx,
+            stopper,
+        } = self;
         // Pass the Task's path to the constructor
-        let mut data = Data::new_directory(&path);
+        let mut data = Data::new_directory(&path, self.depth);
         let (sender, receiver) = std::sync::mpsc::channel();
         // Pass the Task's path to scan_directory
-        let mut waiting = Self::scan_directory(&path, &sender, stopper);
+        let mut waiting = Self::scan_directory(depth, &path, &sender, stopper);
 
         while waiting > 0 {
             if let Ok(message) = receiver.recv() {
@@ -47,6 +64,7 @@ impl<'a> Task<'a> {
     }
 
     pub fn scan_directory(
+        depth: u16,
         path: &Path,
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
@@ -61,9 +79,11 @@ impl<'a> Task<'a> {
                         return;
                     }
                     if path.is_dir() {
-                        Task::new(path, sender, stopper).run();
+                        Task::new(depth, path, sender, stopper).run();
                     } else {
-                        sender.send(Message::Data(Data::new_file(&path))).unwrap();
+                        sender
+                            .send(Message::Data(Data::new_file(&path, depth)))
+                            .unwrap();
                     }
                 });
                 ret

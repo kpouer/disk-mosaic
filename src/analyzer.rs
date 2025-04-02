@@ -33,12 +33,12 @@ impl Analyzer {
         let stopper_copy = stopper.clone();
         let handle = Some(thread::spawn(move || {
             let start = std::time::Instant::now();
-            Task::scan_directory(&root_copy, &tx, &stopper_copy);
+            Task::scan_directory(1, &root_copy, &tx, &stopper_copy);
             tx.send(Message::Finished).unwrap();
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            data: Data::new_directory(&root),
+            data: Data::new_directory(&root, 0),
             current_path: root,
             rx,
             stopper: Some(stopper),
