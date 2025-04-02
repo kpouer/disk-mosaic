@@ -71,7 +71,7 @@ impl DataWidget<'_> {
         );
 
         let name = self.data.name();
-        if name.is_empty() {
+        if !name.is_empty() {
             let galley_name = ui.painter().layout(
                 name.into(),
                 FONT,
