@@ -125,7 +125,7 @@ impl<'a> Task<'a> {
             Ok(iter) => {
                 let vec = iter.collect::<Vec<_>>();
                 let ret = vec.len();
-                vec.par_iter().flatten().map(|p| p.path()).for_each(|path| {
+                vec.iter().flatten().map(|p| p.path()).for_each(|path| {
                     if stopper.load(Ordering::Relaxed) {
                         info!("Stop requested");
                         return;
