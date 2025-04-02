@@ -1,6 +1,5 @@
 use egui::{Color32, ImageSource, include_image};
 use log::warn;
-use rayon::prelude::IntoParallelRefIterator;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};

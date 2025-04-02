@@ -102,8 +102,6 @@ impl<'a> Task<'a> {
                                 "Error recursively scanning directory {:?}: {}",
                                 entry_path, e
                             );
-                            // Optionally create a placeholder Data object for the error directory
-                            // For now, just skip it
                             None
                         }
                     }

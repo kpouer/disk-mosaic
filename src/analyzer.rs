@@ -47,13 +47,11 @@ impl Analyzer {
     }
 
     pub(crate) fn show(&mut self, ctx: &Context) {
-        let mut modified = false;
         for message in self.rx.try_iter() {
             match message {
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         self.data.push(data);
-                        modified = true;
                     }
                 }
                 Message::Finished => {
@@ -62,9 +60,6 @@ impl Analyzer {
             }
         }
 
-        if modified {
-            self.data.compute_size();
-        }
         self.show_top_panel(ctx);
 
         self.show_central_panel(ctx);
