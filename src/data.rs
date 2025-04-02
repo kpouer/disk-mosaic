@@ -1,5 +1,6 @@
 use egui::{Color32, ImageSource, include_image};
 use log::warn;
+use rayon::prelude::IntoParallelRefIterator;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
@@ -86,10 +87,7 @@ impl Data {
 
     pub fn compute_size(&mut self) -> u64 {
         if self.kind == Kind::Dir {
-            self.size = self
-                .children
-                .iter_mut()
-                .fold(0, |acc, child| acc + child.compute_size());
+            self.size = self.children.iter().fold(0, |acc, x| acc + x.size);
         }
         self.size
     }
