@@ -131,6 +131,9 @@ impl<'a> Task<'a> {
                         return;
                     }
                     if path.is_dir() {
+                        sender
+                            .send(Message::Progression(path.to_string_lossy().to_string()))
+                            .unwrap();
                         Task::new(depth, path, sender, stopper).run();
                     } else {
                         sender

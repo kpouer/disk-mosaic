@@ -14,6 +14,7 @@ use treemap::{Mappable, TreemapLayout};
 
 pub enum Message {
     Data(Data),
+    Progression(String),
     Finished,
 }
 
@@ -23,6 +24,7 @@ pub struct Analyzer {
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
+    scanning: String,
 }
 
 impl Analyzer {
@@ -43,12 +45,14 @@ impl Analyzer {
             rx,
             stopper: Some(stopper),
             handle,
+            scanning: String::new(),
         }
     }
 
     pub(crate) fn show(&mut self, ctx: &Context) {
         for message in self.rx.try_iter() {
             match message {
+                Message::Progression(s) => self.scanning = s,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         self.data.push(data);
@@ -74,8 +78,16 @@ impl Analyzer {
                 }
             }
             if self.handle.is_some() {
-                let progress = ProgressBar::new(0.0).animate(true);
-                ui.add(progress);
+                ui.horizontal(|ui| {
+                    if let Some(stopper) = &self.stopper {
+                        if ui.button("Stop").clicked() {
+                            stopper.store(true, std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                    ui.label(format!("Scanning: {}", self.scanning));
+                    let progress = ProgressBar::new(0.0).animate(true);
+                    ui.add(progress);
+                });
             } else {
                 let parents = self.current_path.ancestors();
                 PathBar::new(parents).show(ui);
