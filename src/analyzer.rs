@@ -19,6 +19,7 @@ pub enum Message {
 
 pub struct Analyzer {
     data: Data,
+    current_path: PathBuf,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
@@ -37,7 +38,8 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            data: Data::new_directory(root.clone()),
+            data: Data::new_directory(&root),
+            current_path: root,
             rx,
             stopper: Some(stopper),
             handle,
@@ -80,7 +82,7 @@ impl Analyzer {
                 let progress = ProgressBar::new(0.0).animate(true);
                 ui.add(progress);
             } else {
-                let parents = self.data.path.ancestors();
+                let parents = self.current_path.ancestors();
                 PathBar::new(parents).show(ui);
             }
         });
@@ -103,11 +105,41 @@ impl Analyzer {
                 .filter(|data| data.bounds.w > 0.0 && data.bounds.h > 0.0)
                 .for_each(|data| {
                     if DataWidget::new(data).ui(ui).double_clicked() {
-                        clicked_data = Some(data);
+                        // Store a reference to the clicked data to avoid borrowing issues
+                        clicked_data = Some(data as *mut Data); // Use raw pointer temporarily
                     }
                 });
-            if let Some(clicked_data) = clicked_data {
-                self.data = std::mem::take(clicked_data);
+
+            // Process click after iteration
+            if let Some(clicked_data_ptr) = clicked_data {
+                // Safety: We know the pointer is valid because it came from the iterator
+                // and we haven't modified the Vec structure since.
+                // We need to take ownership, so we use mem::take on the original data.
+                // This requires finding the element again or using the pointer carefully.
+                // A safer approach might be to store the index or name and find it again.
+                // Let's try finding by name (assuming names are unique within a directory).
+
+                // Get the name from the clicked data (unsafe block needed for dereference)
+                let clicked_name = unsafe { (*clicked_data_ptr).name() };
+
+                // Find the index of the clicked item
+                if let Some(index) = self
+                    .data
+                    .children
+                    .iter()
+                    .position(|d| d.name() == clicked_name)
+                {
+                    // Update the current path *before* taking the data
+                    self.current_path.push(clicked_name);
+                    // Take ownership of the clicked data
+                    let taken_data = std::mem::take(&mut self.data.children[index]);
+                    // Replace the analyzer's root data
+                    self.data = taken_data;
+                    // Note: The original Vec now contains a default Data instance at 'index'.
+                    // This might be okay if we always navigate deeper, but could be an issue
+                    // if we implement 'up' navigation later without rebuilding the parent.
+                    // For now, this matches the previous logic's effect.
+                }
             }
         });
     }

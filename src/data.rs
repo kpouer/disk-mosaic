@@ -1,13 +1,13 @@
 use egui::{Color32, ImageSource, include_image};
 use log::warn;
-use std::path::{Path, PathBuf};
+use std::path::Path; // Removed PathBuf
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    pub path: PathBuf,
-    size: u64,
+    pub name: String,
+    pub size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,
     pub children: Vec<Data>,
@@ -33,9 +33,9 @@ impl Kind {
 static INDEX: AtomicUsize = AtomicUsize::new(0);
 
 impl Data {
-    pub fn new_directory(path: PathBuf) -> Self {
+    pub fn new_directory(path: &Path) -> Self {
         Self {
-            path,
+            name: Self::get_file_name(path),
             kind: Kind::Dir,
             color: Self::next_color(),
             ..Default::default()
@@ -43,14 +43,22 @@ impl Data {
     }
 
     pub fn new_file(path: &Path) -> Self {
-        let file_size = path.metadata().map(|metadata| metadata.len()).unwrap_or(0);
+        let size = path.metadata().map(|metadata| metadata.len()).unwrap_or(0);
         Self {
-            path: path.to_path_buf(),
+            name: Self::get_file_name(path),
             kind: Kind::File,
-            size: file_size,
+            size,
             color: Self::next_color(),
             ..Default::default()
         }
+    }
+
+    fn get_file_name(path: &Path) -> String {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "?".to_string());
+        name
     }
 
     fn next_color() -> Color32 {
@@ -69,8 +77,8 @@ impl Data {
         self.children.push(child);
     }
 
-    pub fn file_name(&self) -> &str {
-        self.path.file_name().unwrap().to_str().unwrap_or("")
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn compute_size(&mut self) -> u64 {

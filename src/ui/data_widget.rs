@@ -70,25 +70,28 @@ impl DataWidget<'_> {
             ),
         );
 
-        let galley_name = ui.painter().layout(
-            self.data.file_name().into(),
-            FONT,
-            LABEL_COLOR,
-            ui.available_width() - ui.spacing().item_spacing.x * 2.0,
-        );
-        if galley_name.rect.width() < rect.width() {
-            ui.put(
-                Rect::from_min_size(
-                    rect.min
-                        + Vec2::new(
-                            ui.spacing().item_spacing.x * 2.0 + FONT_SIZE,
-                            ui.spacing().item_spacing.y,
-                        ),
-                    galley_name.rect.size(),
-                ),
-                egui::Label::new(galley_name),
+        let name = self.data.name();
+        if name.is_empty() {
+            let galley_name = ui.painter().layout(
+                name.into(),
+                FONT,
+                LABEL_COLOR,
+                ui.available_width() - ui.spacing().item_spacing.x * 2.0,
             );
-            DataSize::new(self.data, rect).ui(ui);
+            if galley_name.rect.width() < rect.width() {
+                ui.put(
+                    Rect::from_min_size(
+                        rect.min
+                            + Vec2::new(
+                                ui.spacing().item_spacing.x * 2.0 + FONT_SIZE,
+                                ui.spacing().item_spacing.y,
+                            ),
+                        galley_name.rect.size(),
+                    ),
+                    egui::Label::new(galley_name),
+                );
+                DataSize::new(self.data, rect).ui(ui);
+            }
         }
         ui.set_clip_rect(clip);
     }

@@ -23,9 +23,11 @@ impl<'a> Task<'a> {
 
     pub fn run(self) {
         let Self { path, tx, stopper } = self;
-        let mut data = Data::new_directory(path);
+        // Pass the Task's path to the constructor
+        let mut data = Data::new_directory(&path);
         let (sender, receiver) = std::sync::mpsc::channel();
-        let mut waiting = Self::scan_directory(&data.path, &sender, stopper);
+        // Pass the Task's path to scan_directory
+        let mut waiting = Self::scan_directory(&path, &sender, stopper);
 
         while waiting > 0 {
             if let Ok(message) = receiver.recv() {
