@@ -84,9 +84,10 @@ impl Data {
         &self.name
     }
 
-    pub fn set_nodes(&mut self, nodes: Vec<Data>) {
+    pub fn set_nodes(&mut self, mut nodes: Vec<Data>) {
         self.size = Self::compute_size(&nodes);
         if self.depth < 2 {
+            nodes.retain(|d| d.size > 1000000);
             self.children = nodes;
         }
     }
