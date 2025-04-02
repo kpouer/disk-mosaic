@@ -44,7 +44,7 @@ impl<'a> Task<'a> {
         let mut data = Data::new_directory(&path, self.depth);
         let (sender, receiver) = std::sync::mpsc::channel();
         // Pass the Task's path to scan_directory
-        let mut waiting = Self::scan_directory(depth, &path, &sender, stopper);
+        let mut waiting = Self::scan_directory2(depth, &path, &sender, stopper);
 
         while waiting > 0 {
             if let Ok(message) = receiver.recv() {
@@ -61,6 +61,41 @@ impl<'a> Task<'a> {
         }
         data.compute_size();
         tx.send(Message::Data(data)).unwrap();
+    }
+
+    pub fn scan_directory2(
+        depth: u16,
+        path: &Path,
+        sender: &Sender<Message>,
+        stopper: &Arc<AtomicBool>,
+    ) -> usize {
+        match path.read_dir() {
+            Ok(iter) => {
+                let vec = iter.collect::<Vec<_>>();
+                let ret = vec.len();
+                vec.par_iter().flatten().map(|p| p.path()).for_each(|path| {
+                    if stopper.load(Ordering::Relaxed) {
+                        info!("Stop requested");
+                        return;
+                    }
+                    if path.is_dir() {
+                        Task::new(depth, path, sender, stopper).run();
+                    } else {
+                        sender
+                            .send(Message::Data(Data::new_file(&path, depth)))
+                            .unwrap();
+                    }
+                });
+                ret
+            }
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::PermissionDenied => {}
+                    _ => debug!("Error reading directory: {path:?}, {e:?}"),
+                }
+                0
+            }
+        }
     }
 
     pub fn scan_directory(
