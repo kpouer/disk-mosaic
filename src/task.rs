@@ -14,6 +14,7 @@ pub struct Task<'a> {
     path: PathBuf,
     tx: &'a Sender<Message>,
     stopper: &'a Arc<AtomicBool>,
+    sender: Sender<Message>,
 }
 
 impl<'a> Task<'a> {
@@ -22,12 +23,14 @@ impl<'a> Task<'a> {
         path: PathBuf,
         tx: &'a Sender<Message>,
         stopper: &'a Arc<AtomicBool>,
+        sender: Sender<Message>,
     ) -> Self {
         Self {
             depth,
             path,
             tx,
             stopper,
+            sender,
         }
     }
 
@@ -37,11 +40,12 @@ impl<'a> Task<'a> {
             path,
             tx,
             stopper,
+            sender,
         } = self;
 
         let mut data = Data::new_directory(&path, self.depth);
 
-        match Self::scan_directory_recursive(&path, self.depth, stopper) {
+        match Self::scan_directory_recursive(&path, self.depth, stopper, &sender) {
             Ok(children) => {
                 data.set_nodes(children);
             }
@@ -55,12 +59,15 @@ impl<'a> Task<'a> {
         }
     }
 
-    // New recursive scanning function returning results directly
     fn scan_directory_recursive(
         path: &Path,
         depth: u16,
         stopper: &Arc<AtomicBool>,
+        sender: &Sender<Message>,
     ) -> Result<Vec<Data>, Error> {
+        sender
+            .send(Message::Progression(path.to_string_lossy().to_string()))
+            .unwrap();
         let entries = match path.read_dir() {
             Ok(iter) => iter.collect::<Result<Vec<_>, Error>>()?,
             Err(e) => {
@@ -96,7 +103,7 @@ impl<'a> Task<'a> {
                     ..Default::default()
                 };
                 if metadata.is_dir() {
-                    match Self::scan_directory_recursive(&entry_path, depth + 1, stopper) {
+                    match Self::scan_directory_recursive(&entry_path, depth + 1, stopper, sender) {
                         Ok(grandchildren) => {
                             let mut dir_data = Data::new_directory(&entry_path, depth + 1);
                             dir_data.set_nodes(grandchildren);
@@ -140,7 +147,7 @@ impl<'a> Task<'a> {
                         sender
                             .send(Message::Progression(path.to_string_lossy().to_string()))
                             .unwrap();
-                        Task::new(depth, path, sender, stopper).run();
+                        Task::new(depth, path, sender, stopper, sender.clone()).run();
                     } else {
                         sender
                             .send(Message::Data(Data::new_file(&path, depth)))

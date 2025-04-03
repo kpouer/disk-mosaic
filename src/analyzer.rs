@@ -2,7 +2,7 @@ use crate::data::Data;
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
-use egui::{Context, ProgressBar, Widget};
+use egui::{Context, Widget};
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -85,8 +85,6 @@ impl Analyzer {
                         }
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
-                    let progress = ProgressBar::new(0.0).animate(true);
-                    ui.add(progress);
                 });
             } else {
                 let parents = self.current_path.ancestors();
