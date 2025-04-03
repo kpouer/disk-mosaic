@@ -4,9 +4,9 @@ use log::{debug, info, warn};
 use rayon::prelude::*;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 
 pub struct Task<'a> {
     /// the depth that will be set for the children of that task
@@ -16,6 +16,8 @@ pub struct Task<'a> {
     stopper: &'a Arc<AtomicBool>,
     sender: Sender<Message>,
 }
+
+const BIG_FILE_THRESHOLD: u64 = 1000000;
 
 impl<'a> Task<'a> {
     pub fn new(
@@ -78,7 +80,15 @@ impl<'a> Task<'a> {
             }
         };
 
-        let children: Vec<Data> = entries
+        let small_file_data = Arc::new(Mutex::new(Data {
+            depth,
+            name: "Remaining".to_string(),
+            kind: Kind::SmallFiles,
+            size: 0,
+            color: Data::next_color(),
+            ..Default::default()
+        }));
+        let mut children: Vec<Data> = entries
             .par_iter()
             .filter_map(|entry| {
                 if stopper.load(Ordering::Relaxed) {
@@ -93,14 +103,6 @@ impl<'a> Task<'a> {
                         debug!("Failed to get metadata for {:?}: {}", entry_path, e);
                         return None;
                     }
-                };
-                let small_file_data = Data {
-                    depth,
-                    name: "Remaining".to_string(),
-                    kind: Kind::File,
-                    size: metadata.len(),
-                    color: Data::next_color(),
-                    ..Default::default()
                 };
                 if metadata.is_dir() {
                     match Self::scan_directory_recursive(&entry_path, depth + 1, stopper, sender) {
@@ -118,7 +120,14 @@ impl<'a> Task<'a> {
                         }
                     }
                 } else if metadata.is_file() {
-                    Some(Data::new_file(&entry_path, depth + 1))
+                    let size = Data::get_file_size(&entry_path);
+                    if size < BIG_FILE_THRESHOLD {
+                        let mut d = small_file_data.lock().unwrap();
+                        d.size += size;
+                        None
+                    } else {
+                        Some(Data::new_file(&entry_path, size, depth + 1))
+                    }
                 } else {
                     // Ignore symlinks, sockets, etc.
                     None
@@ -126,6 +135,10 @@ impl<'a> Task<'a> {
             })
             .collect();
 
+        let small_file_data = small_file_data.lock().unwrap();
+        if small_file_data.size > 0 {
+            children.push(small_file_data.clone());
+        }
         Ok(children)
     }
 
@@ -149,8 +162,9 @@ impl<'a> Task<'a> {
                             .unwrap();
                         Task::new(depth, path, sender, stopper, sender.clone()).run();
                     } else {
+                        let size = Data::get_file_size(&path);
                         sender
-                            .send(Message::Data(Data::new_file(&path, depth)))
+                            .send(Message::Data(Data::new_file(&path, size, depth)))
                             .unwrap();
                     }
                 });

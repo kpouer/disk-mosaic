@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Data {
     pub(crate) depth: u16,
     pub name: String,
@@ -15,11 +15,12 @@ pub struct Data {
     pub kind: Kind,
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
     #[default]
     Dir,
     File,
+    SmallFiles,
 }
 
 impl Kind {
@@ -27,6 +28,7 @@ impl Kind {
         match self {
             Kind::Dir => include_image!("../assets/directory.svg"),
             Kind::File => include_image!("../assets/file.svg"),
+            Kind::SmallFiles => include_image!("../assets/file.svg"),
         }
     }
 }
@@ -44,8 +46,7 @@ impl Data {
         }
     }
 
-    pub fn new_file(path: &Path, depth: u16) -> Self {
-        let size = path.metadata().map(|metadata| metadata.len()).unwrap_or(0);
+    pub fn new_file(path: &Path, size: u64, depth: u16) -> Self {
         Self {
             depth,
             name: Self::get_file_name(path),
@@ -54,6 +55,10 @@ impl Data {
             color: Self::next_color(),
             ..Default::default()
         }
+    }
+
+    pub fn get_file_size(path: &Path) -> u64 {
+        path.metadata().map(|metadata| metadata.len()).unwrap_or(0)
     }
 
     fn get_file_name(path: &Path) -> String {
@@ -86,7 +91,7 @@ impl Data {
 
     pub fn set_nodes(&mut self, mut nodes: Vec<Data>) {
         self.size = Self::compute_size(&nodes);
-        if self.depth < 2 {
+        if self.depth < 200 {
             nodes.retain(|d| d.size > 1000000);
             self.children = nodes;
         }
