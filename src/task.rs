@@ -17,7 +17,7 @@ pub struct Task<'a> {
     sender: Sender<Message>,
 }
 
-const BIG_FILE_THRESHOLD: u64 = 1000000;
+const BIG_FILE_THRESHOLD: u64 = 10000000;
 
 impl<'a> Task<'a> {
     pub fn new(
