@@ -6,7 +6,7 @@ use treemap::{Mappable, Rect};
 
 #[derive(Debug, Default)]
 pub struct Data {
-    depth: u16,
+    pub(crate) depth: u16,
     pub name: String,
     pub size: u64,
     pub bounds: treemap::Rect,
@@ -64,7 +64,7 @@ impl Data {
         name
     }
 
-    fn next_color() -> Color32 {
+    pub(crate) fn next_color() -> Color32 {
         let idx = INDEX
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
                 Some((v + 1) % egui_solarized::ACCENT_COLORS.len())

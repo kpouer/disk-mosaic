@@ -1,5 +1,5 @@
 use crate::analyzer::Message;
-use crate::data::Data;
+use crate::data::{Data, Kind};
 use log::{debug, info, warn};
 use rayon::prelude::*;
 use std::io::{Error, ErrorKind};
@@ -87,7 +87,14 @@ impl<'a> Task<'a> {
                         return None;
                     }
                 };
-
+                let small_file_data = Data {
+                    depth,
+                    name: "Remaining".to_string(),
+                    kind: Kind::File,
+                    size: metadata.len(),
+                    color: Data::next_color(),
+                    ..Default::default()
+                };
                 if metadata.is_dir() {
                     match Self::scan_directory_recursive(&entry_path, depth + 1, stopper) {
                         Ok(grandchildren) => {
