@@ -127,11 +127,10 @@ impl<'a> Task<'a> {
         path: &Path,
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
-    ) -> usize {
+    ) {
         match path.read_dir() {
             Ok(iter) => {
                 let vec = iter.collect::<Vec<_>>();
-                let ret = vec.len();
                 vec.iter().flatten().map(|p| p.path()).for_each(|path| {
                     if stopper.load(Ordering::Relaxed) {
                         info!("Stop requested");
@@ -148,15 +147,11 @@ impl<'a> Task<'a> {
                             .unwrap();
                     }
                 });
-                ret
             }
-            Err(e) => {
-                match e.kind() {
-                    ErrorKind::PermissionDenied => {}
-                    _ => debug!("Error reading directory: {path:?}, {e:?}"),
-                }
-                0
-            }
+            Err(e) => match e.kind() {
+                ErrorKind::PermissionDenied => {}
+                _ => debug!("Error reading directory: {path:?}, {e:?}"),
+            },
         }
     }
 }
