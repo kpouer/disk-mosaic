@@ -1,4 +1,4 @@
-use crate::data::Data;
+use crate::data::{Data, Kind};
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
@@ -102,18 +102,19 @@ impl Analyzer {
                 clip_rect.width() as f64,
                 clip_rect.height() as f64,
             );
-            TreemapLayout::new().layout_items(&mut self.data.children, rect);
             let mut clicked_data = None;
-            self.data
-                .children
-                .iter_mut()
-                .filter(|data| data.bounds.w > 0.0 && data.bounds.h > 0.0)
-                .for_each(|data| {
-                    if DataWidget::new(data).ui(ui).double_clicked() {
-                        // Store a reference to the clicked data to avoid borrowing issues
-                        clicked_data = Some(data as *mut Data); // Use raw pointer temporarily
-                    }
-                });
+            if let Kind::Dir(children) = &mut self.data.kind {
+                TreemapLayout::new().layout_items(children, rect);
+                children
+                    .iter_mut()
+                    .filter(|data| data.bounds.w > 0.0 && data.bounds.h > 0.0)
+                    .for_each(|data| {
+                        if DataWidget::new(data).ui(ui).double_clicked() {
+                            // Store a reference to the clicked data to avoid borrowing issues
+                            clicked_data = Some(data as *mut Data); // Use raw pointer temporarily
+                        }
+                    });
+            }
 
             // Process click after iteration
             if let Some(clicked_data_ptr) = clicked_data {
@@ -127,23 +128,20 @@ impl Analyzer {
                 // Get the name from the clicked data (unsafe block needed for dereference)
                 let clicked_name = unsafe { (*clicked_data_ptr).name() };
 
-                // Find the index of the clicked item
-                if let Some(index) = self
-                    .data
-                    .children
-                    .iter()
-                    .position(|d| d.name() == clicked_name)
-                {
-                    // Update the current path *before* taking the data
-                    self.current_path.push(clicked_name);
-                    // Take ownership of the clicked data
-                    let taken_data = std::mem::take(&mut self.data.children[index]);
-                    // Replace the analyzer's root data
-                    self.data = taken_data;
-                    // Note: The original Vec now contains a default Data instance at 'index'.
-                    // This might be okay if we always navigate deeper, but could be an issue
-                    // if we implement 'up' navigation later without rebuilding the parent.
-                    // For now, this matches the previous logic's effect.
+                if let Kind::Dir(children) = &mut self.data.kind {
+                    // Find the index of the clicked item
+                    if let Some(index) = children.iter().position(|d| d.name() == clicked_name) {
+                        // Update the current path *before* taking the data
+                        self.current_path.push(clicked_name);
+                        // Take ownership of the clicked data
+                        let taken_data = std::mem::take(&mut children[index]);
+                        // Replace the analyzer's root data
+                        self.data = taken_data;
+                        // Note: The original Vec now contains a default Data instance at 'index'.
+                        // This might be okay if we always navigate deeper, but could be an issue
+                        // if we implement 'up' navigation later without rebuilding the parent.
+                        // For now, this matches the previous logic's effect.
+                    }
                 }
             }
         });

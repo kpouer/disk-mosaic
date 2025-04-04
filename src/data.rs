@@ -1,32 +1,36 @@
 use egui::{Color32, ImageSource, include_image};
-use log::warn;
+use log::{error, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Data {
     pub(crate) depth: u16,
     pub name: String,
     pub size: u64,
     pub bounds: treemap::Rect,
     pub color: Color32,
-    pub children: Vec<Data>,
     pub kind: Kind,
 }
 
-#[derive(Default, Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Kind {
-    #[default]
-    Dir,
+    Dir(Vec<Data>),
     File,
     SmallFiles,
+}
+
+impl Default for Kind {
+    fn default() -> Self {
+        Self::Dir(Vec::new())
+    }
 }
 
 impl Kind {
     pub fn get_image(&self) -> ImageSource {
         match self {
-            Kind::Dir => include_image!("../assets/directory.svg"),
+            Kind::Dir(_) => include_image!("../assets/directory.svg"),
             Kind::File => include_image!("../assets/file.svg"),
             Kind::SmallFiles => include_image!("../assets/file.svg"),
         }
@@ -40,7 +44,7 @@ impl Data {
         Self {
             depth,
             name: Self::get_file_name(path),
-            kind: Kind::Dir,
+            kind: Default::default(),
             color: Self::next_color(),
             ..Default::default()
         }
@@ -82,7 +86,11 @@ impl Data {
     }
 
     pub(crate) fn push(&mut self, child: Data) {
-        self.children.push(child);
+        if let Kind::Dir(children) = &mut self.kind {
+            children.push(child);
+        } else {
+            error!("Invalid kind ({self:?})");
+        }
     }
 
     pub fn name(&self) -> &str {
@@ -91,9 +99,10 @@ impl Data {
 
     pub fn set_nodes(&mut self, mut nodes: Vec<Data>) {
         self.size = Self::compute_size(&nodes);
-        if self.depth < 200 {
-            nodes.retain(|d| d.size > 1000000);
-            self.children = nodes;
+        if let Kind::Dir(_) = &mut self.kind {
+            self.kind = Kind::Dir(nodes);
+        } else {
+            error!("Invalid kind ({self:?})");
         }
     }
 
