@@ -65,29 +65,18 @@ impl Analyzer {
             }
         }
 
-        let navigate_to_index = self.show_top_panel(ctx);
-        if let Some(index) = navigate_to_index {
-            if index < self.data_stack.len() - 1 {
-                // Restore the child data into the parent's children list before truncating
-                if let Some(child_data) = self.data_stack.pop() {
+        if let Some(index) = self.show_top_panel(ctx) {
+            // index was clicked
+            while index < self.data_stack.len() - 1 {
+                if let Some(popped_data) = self.data_stack.pop() {
                     if let Some(parent_data) = self.data_stack.get_mut(index) {
                         if let Kind::Dir(children) = &mut parent_data.kind {
-                            // Find the placeholder left by std::mem::take and replace it
-                            if let Some(placeholder) =
-                                children.iter_mut().find(|d| **d == Data::default())
-                            {
-                                *placeholder = child_data;
-                            } else {
-                                log::warn!("Could not find placeholder in parent's children when navigating up");
-                                // As a fallback, just push it back if placeholder not found?
-                                // Or maybe the placeholder finding logic needs adjustment.
-                                // For now, log a warning. If issues arise, this might need revisiting.
-                            }
+                            children.push(popped_data);
+                        } else {
+                            log::error!("Invalid kind ({parent_data:?})");
                         }
                     }
                 }
-                // Now truncate the stack to the selected parent level
-                self.data_stack.truncate(index + 1);
             }
         }
 
