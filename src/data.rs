@@ -97,7 +97,7 @@ impl Data {
         &self.name
     }
 
-    pub fn set_nodes(&mut self, mut nodes: Vec<Data>) {
+    pub fn set_nodes(&mut self, nodes: Vec<Data>) {
         self.size = Self::compute_size(&nodes);
         if let Kind::Dir(_) = &mut self.kind {
             self.kind = Kind::Dir(nodes);
@@ -106,7 +106,7 @@ impl Data {
         }
     }
 
-    fn compute_size(nodes: &Vec<Data>) -> u64 {
+    fn compute_size(nodes: &[Data]) -> u64 {
         nodes.iter().fold(0, |acc, x| acc + x.size)
     }
 }

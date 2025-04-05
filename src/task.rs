@@ -71,7 +71,12 @@ impl<'a> Task<'a> {
             .send(Message::Progression(path.to_string_lossy().to_string()))
             .unwrap();
         let entries = match path.read_dir() {
-            Ok(iter) => iter.collect::<Result<Vec<_>, Error>>()?,
+            Ok(iter) => {
+                let iter = iter.flatten();
+                #[cfg(target_os = "macos")]
+                let iter = iter.filter(|p| !p.path().starts_with("/System/Volumes"));
+                iter.collect::<Vec<_>>()
+            }
             Err(e) => {
                 if e.kind() != ErrorKind::PermissionDenied {
                     debug!("Error reading directory: {path:?}, {e:?}");

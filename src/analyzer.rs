@@ -19,8 +19,7 @@ pub enum Message {
 }
 
 pub struct Analyzer {
-    data: Data,
-    current_path: PathBuf,
+    data_stack: Vec<Data>,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
@@ -40,8 +39,7 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            data: Data::new_directory(&root, 0),
-            current_path: root,
+            data_stack: vec![Data::new_directory(&root, 0)],
             rx,
             stopper: Some(stopper),
             handle,
@@ -55,7 +53,10 @@ impl Analyzer {
                 Message::Progression(s) => self.scanning = s,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
-                        self.data.push(data);
+                        match self.data_stack.last_mut() {
+                            Some(current_data) => current_data.push(data),
+                            None => log::error!("Data stack is empty when receiving data"),
+                        }
                     }
                 }
                 Message::Finished => {
@@ -64,13 +65,19 @@ impl Analyzer {
             }
         }
 
-        self.show_top_panel(ctx);
+        let navigate_to_index = self.show_top_panel(ctx);
+        if let Some(index) = navigate_to_index {
+            if index < self.data_stack.len() - 1 {
+                self.data_stack.truncate(index + 1);
+            }
+        }
 
         self.show_central_panel(ctx);
-        ctx.request_repaint_after(Duration::from_millis(60))
+        ctx.request_repaint_after(Duration::from_millis(60));
     }
 
-    fn show_top_panel(&mut self, ctx: &Context) {
+    fn show_top_panel(&mut self, ctx: &Context) -> Option<usize> {
+        let mut clicked_index = None;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             if let Some(handle) = &self.handle {
                 if handle.is_finished() {
@@ -86,11 +93,11 @@ impl Analyzer {
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
                 });
-            } else {
-                let parents = self.current_path.ancestors();
-                PathBar::new(parents).show(ui);
+            } else if let Some(index) = PathBar::new(&self.data_stack).show(ui) {
+                clicked_index = Some(index);
             }
         });
+        clicked_index
     }
 
     fn show_central_panel(&mut self, ctx: &Context) {
@@ -102,45 +109,31 @@ impl Analyzer {
                 clip_rect.width() as f64,
                 clip_rect.height() as f64,
             );
-            let mut clicked_data = None;
-            if let Kind::Dir(children) = &mut self.data.kind {
-                TreemapLayout::new().layout_items(children, rect);
-                children
-                    .iter_mut()
-                    .filter(|data| data.bounds.w > 0.0 && data.bounds.h > 0.0)
-                    .for_each(|data| {
-                        if DataWidget::new(data).ui(ui).double_clicked() {
-                            // Store a reference to the clicked data to avoid borrowing issues
-                            clicked_data = Some(data as *mut Data); // Use raw pointer temporarily
-                        }
-                    });
+            let mut clicked_data_index = None;
+            if let Some(current_data) = self.data_stack.last_mut() {
+                if let Kind::Dir(children) = &mut current_data.kind {
+                    TreemapLayout::new().layout_items(children, rect);
+                    children
+                        .iter_mut()
+                        .enumerate()
+                        .filter(|(_, data)| data.bounds.w > 0.0 && data.bounds.h > 0.0)
+                        .for_each(|(index, data)| {
+                            if DataWidget::new(data).ui(ui).double_clicked()
+                                && matches!(data.kind, Kind::Dir(_))
+                            {
+                                clicked_data_index = Some(index);
+                            }
+                        });
+                }
             }
 
-            // Process click after iteration
-            if let Some(clicked_data_ptr) = clicked_data {
-                // Safety: We know the pointer is valid because it came from the iterator
-                // and we haven't modified the Vec structure since.
-                // We need to take ownership, so we use mem::take on the original data.
-                // This requires finding the element again or using the pointer carefully.
-                // A safer approach might be to store the index or name and find it again.
-                // Let's try finding by name (assuming names are unique within a directory).
-
-                // Get the name from the clicked data (unsafe block needed for dereference)
-                let clicked_name = unsafe { (*clicked_data_ptr).name() };
-
-                if let Kind::Dir(children) = &mut self.data.kind {
-                    // Find the index of the clicked item
-                    if let Some(index) = children.iter().position(|d| d.name() == clicked_name) {
-                        // Update the current path *before* taking the data
-                        self.current_path.push(clicked_name);
-                        // Take ownership of the clicked data
-                        let taken_data = std::mem::take(&mut children[index]);
-                        // Replace the analyzer's root data
-                        self.data = taken_data;
-                        // Note: The original Vec now contains a default Data instance at 'index'.
-                        // This might be okay if we always navigate deeper, but could be an issue
-                        // if we implement 'up' navigation later without rebuilding the parent.
-                        // For now, this matches the previous logic's effect.
+            if let Some(clicked_index) = clicked_data_index {
+                if let Some(current_data) = self.data_stack.last_mut() {
+                    if let Kind::Dir(children) = &mut current_data.kind {
+                        if clicked_index < children.len() {
+                            let taken_data = std::mem::take(&mut children[clicked_index]);
+                            self.data_stack.push(taken_data);
+                        }
                     }
                 }
             }

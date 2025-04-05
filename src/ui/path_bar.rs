@@ -1,32 +1,33 @@
-use egui::Ui;
-use std::path::{Ancestors, Path};
+use crate::data::Data;
+use egui::{Button, Ui};
 
 pub struct PathBar<'a> {
-    parents: Ancestors<'a>,
+    path_components: &'a [Data],
 }
 
 impl<'a> PathBar<'a> {
-    pub fn new(parents: Ancestors<'a>) -> Self {
-        Self { parents }
+    pub fn new(path_components: &'a [Data]) -> Self {
+        Self { path_components }
     }
 
-    pub(crate) fn show(&self, ui: &mut Ui) -> Option<&Path> {
-        let mut ret = None;
+    // Return the index of the clicked component
+    pub(crate) fn show(&self, ui: &mut Ui) -> Option<usize> {
+        let mut clicked_index = None;
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
-            ui.spacing_mut().item_spacing.y = 0.0;
-            let parents: Vec<&Path> = self.parents.collect();
-            for parent in parents.into_iter().rev() {
-                if let Some(parent_name) = parent.file_name() {
+            self.path_components
+                .iter()
+                .enumerate()
+                .for_each(|(index, data)| {
+                    let is_last = index == self.path_components.len() - 1;
                     if ui
-                        .button(format!("/{}", parent_name.to_string_lossy()))
+                        .add_enabled(!is_last, Button::new(format!("/{}", data.name.as_str())))
                         .clicked()
                     {
-                        ret = Some(parent);
+                        clicked_index = Some(index);
                     }
-                }
-            }
+                })
         });
-        ret
+        clicked_index
     }
 }
