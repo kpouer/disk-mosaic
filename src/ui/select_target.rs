@@ -1,4 +1,5 @@
 use egui::{Context, ScrollArea};
+use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;
 use sysinfo::{Disk, Disks};
@@ -68,6 +69,15 @@ impl SelectTarget {
                 });
 
                 ui.separator();
+
+                if ui.button("Home Folder").clicked() {
+                    if let Some(path) = home_dir() {
+                        selected_path = Some(path);
+                    } else {
+                        // Optional: Log or display an error if home dir not found
+                        log::error!("Could not determine home directory.");
+                    }
+                }
 
                 if ui.button("Browse for Directory...").clicked() {
                     if let Some(path) = rfd::FileDialog::new().pick_folder() {
