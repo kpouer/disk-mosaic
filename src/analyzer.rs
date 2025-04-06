@@ -14,10 +14,12 @@ use treemap::{Mappable, TreemapLayout};
 
 pub enum Message {
     Data(Data),
-    Progression(String),
+    DirectoryScanStart(String),
+    DirectoryScanDone(u64),
     Finished,
 }
 
+#[derive(Debug)]
 pub struct Analyzer {
     modified_in_this_frame: bool,
     data_stack: Vec<Data>,
@@ -25,6 +27,8 @@ pub struct Analyzer {
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
     scanning: String,
+    scanned_directories: u64,
+    scanned_files: u64,
 }
 
 impl Analyzer {
@@ -46,6 +50,8 @@ impl Analyzer {
             stopper: Some(stopper),
             handle,
             scanning: String::new(),
+            scanned_directories: 0,
+            scanned_files: 0,
         }
     }
 
@@ -75,7 +81,11 @@ impl Analyzer {
     fn receive_data(&mut self) {
         for message in self.rx.try_iter() {
             match message {
-                Message::Progression(s) => self.scanning = s,
+                Message::DirectoryScanStart(d) => {
+                    self.scanning = d;
+                    self.scanned_directories += 1;
+                }
+                Message::DirectoryScanDone(file_count) => self.scanned_files += file_count,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         match self.data_stack.last_mut() {

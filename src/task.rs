@@ -68,7 +68,9 @@ impl<'a> Task<'a> {
         sender: &Sender<Message>,
     ) -> Result<Vec<Data>, Error> {
         sender
-            .send(Message::Progression(path.to_string_lossy().to_string()))
+            .send(Message::DirectoryScanStart(
+                path.to_string_lossy().to_string(),
+            ))
             .unwrap();
         let entries = match path.read_dir() {
             Ok(iter) => {
@@ -93,6 +95,7 @@ impl<'a> Task<'a> {
             color: Data::next_color(),
             ..Default::default()
         }));
+
         let mut children: Vec<Data> = entries
             .par_iter()
             .filter_map(|entry| {
@@ -139,11 +142,17 @@ impl<'a> Task<'a> {
                 }
             })
             .collect();
-
         let small_file_data = small_file_data.lock().unwrap();
         if small_file_data.size > 0 {
             children.push(small_file_data.clone());
         }
+        let file_count = children
+            .par_iter()
+            .filter(|data| matches!(data.kind, Kind::File))
+            .count();
+        sender
+            .send(Message::DirectoryScanDone(file_count as u64))
+            .unwrap();
         Ok(children)
     }
 
@@ -153,6 +162,7 @@ impl<'a> Task<'a> {
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
     ) {
+        let mut file_count = 0;
         match path.read_dir() {
             Ok(iter) => {
                 let vec = iter.collect::<Vec<_>>();
@@ -163,10 +173,13 @@ impl<'a> Task<'a> {
                     }
                     if path.is_dir() {
                         sender
-                            .send(Message::Progression(path.to_string_lossy().to_string()))
+                            .send(Message::DirectoryScanStart(
+                                path.to_string_lossy().to_string(),
+                            ))
                             .unwrap();
                         Task::new(depth, path, sender, stopper, sender.clone()).run();
-                    } else {
+                    } else if path.is_file() {
+                        file_count += 1;
                         let size = Data::get_file_size(&path);
                         sender
                             .send(Message::Data(Data::new_file(&path, size, depth)))
@@ -179,5 +192,6 @@ impl<'a> Task<'a> {
                 _ => debug!("Error reading directory: {path:?}, {e:?}"),
             },
         }
+        sender.send(Message::DirectoryScanDone(file_count)).unwrap();
     }
 }
