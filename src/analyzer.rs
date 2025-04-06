@@ -89,7 +89,10 @@ impl Analyzer {
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         match self.data_stack.last_mut() {
-                            Some(current_data) => current_data.push(data),
+                            Some(current_data) => {
+                                current_data.push(data);
+                                self.modified_in_this_frame = true;
+                            }
                             None => log::error!("Data stack is empty when receiving data"),
                         }
                     }
