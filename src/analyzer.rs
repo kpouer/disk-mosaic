@@ -19,6 +19,7 @@ pub enum Message {
 }
 
 pub struct Analyzer {
+    modified_in_this_frame: bool,
     data_stack: Vec<Data>,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
@@ -39,6 +40,7 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
+            modified_in_this_frame: false,
             data_stack: vec![Data::new_directory(&root, 0)],
             rx,
             stopper: Some(stopper),
@@ -48,6 +50,29 @@ impl Analyzer {
     }
 
     pub(crate) fn show(&mut self, ctx: &Context) {
+        self.receive_data();
+
+        if let Some(index) = self.show_top_panel(ctx) {
+            // index was clicked
+            while index < self.data_stack.len() - 1 {
+                if let Some(popped_data) = self.data_stack.pop() {
+                    if let Some(parent_data) = self.data_stack.get_mut(index) {
+                        if let Kind::Dir(children) = &mut parent_data.kind {
+                            children.push(popped_data);
+                            self.modified_in_this_frame = true;
+                        } else {
+                            log::error!("Invalid kind ({parent_data:?})");
+                        }
+                    }
+                }
+            }
+        }
+
+        self.show_central_panel(ctx);
+        ctx.request_repaint_after(Duration::from_millis(60));
+    }
+
+    fn receive_data(&mut self) {
         for message in self.rx.try_iter() {
             match message {
                 Message::Progression(s) => self.scanning = s,
@@ -64,24 +89,6 @@ impl Analyzer {
                 }
             }
         }
-
-        if let Some(index) = self.show_top_panel(ctx) {
-            // index was clicked
-            while index < self.data_stack.len() - 1 {
-                if let Some(popped_data) = self.data_stack.pop() {
-                    if let Some(parent_data) = self.data_stack.get_mut(index) {
-                        if let Kind::Dir(children) = &mut parent_data.kind {
-                            children.push(popped_data);
-                        } else {
-                            log::error!("Invalid kind ({parent_data:?})");
-                        }
-                    }
-                }
-            }
-        }
-
-        self.show_central_panel(ctx);
-        ctx.request_repaint_after(Duration::from_millis(60));
     }
 
     fn show_top_panel(&mut self, ctx: &Context) -> Option<usize> {
@@ -120,9 +127,12 @@ impl Analyzer {
             let mut clicked_data_index = None;
             if let Some(current_data) = self.data_stack.last_mut() {
                 if let Kind::Dir(children) = &mut current_data.kind {
-                    TreemapLayout::new().layout_items(children, rect);
+                    if self.modified_in_this_frame {
+                        TreemapLayout::new().layout_items(children, rect);
+                        self.modified_in_this_frame = false;
+                    }
                     children
-                        .iter_mut()
+                        .iter()
                         .enumerate()
                         .filter(|(_, data)| data.bounds.w > 0.0 && data.bounds.h > 0.0)
                         .for_each(|(index, data)| {
