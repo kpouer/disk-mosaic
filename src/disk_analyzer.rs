@@ -2,6 +2,7 @@ use crate::analyzer::Analyzer;
 use crate::ui::select_target::SelectTarget;
 use log::info;
 
+#[derive(Debug)]
 pub enum AppState {
     SelectDisk(SelectTarget),
     Analyzing(Analyzer),
@@ -13,7 +14,7 @@ impl Default for AppState {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct DiskAnalyzerApp {
     state: AppState,
 }

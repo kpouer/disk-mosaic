@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
+#[derive(Debug)]
 pub struct Task<'a> {
     /// the depth that will be set for the children of that task
     depth: u16,

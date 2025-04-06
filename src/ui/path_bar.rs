@@ -1,6 +1,7 @@
 use crate::data::Data;
 use egui::{Button, Ui};
 
+#[derive(Debug)]
 pub struct PathBar<'a> {
     path_components: &'a [Data],
 }

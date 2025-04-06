@@ -5,6 +5,7 @@ use egui::{Color32, Image, Pos2, Rect, Response, Ui, Vec2, Widget};
 use humansize::DECIMAL;
 use treemap::Mappable;
 
+#[derive(Debug)]
 pub struct DataWidget<'a> {
     data: &'a Data,
 }
@@ -97,6 +98,7 @@ impl DataWidget<'_> {
     }
 }
 
+#[derive(Debug)]
 struct DataSize<'a> {
     data: &'a Data,
     rect: Rect,

@@ -12,6 +12,7 @@ use std::thread;
 use std::time::Duration;
 use treemap::{Mappable, TreemapLayout};
 
+#[derive(Debug)]
 pub enum Message {
     Data(Data),
     DirectoryScanStart(String),

@@ -4,6 +4,7 @@ use humansize::DECIMAL;
 use std::path::PathBuf;
 use sysinfo::{Disk, Disks};
 
+#[derive(Debug)]
 pub(crate) struct SelectTarget {
     disks: Vec<DiskLabel>,
 }
@@ -18,6 +19,7 @@ impl Default for SelectTarget {
     }
 }
 
+#[derive(Debug)]
 struct DiskLabel {
     mount_point: PathBuf,
     label: String,
@@ -76,12 +78,6 @@ impl SelectTarget {
                     } else {
                         // Optional: Log or display an error if home dir not found
                         log::error!("Could not determine home directory.");
-                    }
-                }
-
-                if ui.button("Browse for Directory...").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                        selected_path = Some(path);
                     }
                 }
 
