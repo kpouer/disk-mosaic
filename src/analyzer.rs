@@ -92,8 +92,9 @@ impl Analyzer {
             // index was clicked
             while index < self.data_stack.len() - 1 {
                 if let Some(popped_data) = self.data_stack.pop() {
-                    if let Some(parent_data) = self.data_stack.get_mut(index) {
+                    if let Some(parent_data) = self.data_stack.last_mut() {
                         if let Kind::Dir(children) = &mut parent_data.kind {
+                            info!("Pushing {} into {}", popped_data.name, parent_data.name);
                             children.push(popped_data);
                         } else {
                             log::error!("Invalid kind ({parent_data:?})");
