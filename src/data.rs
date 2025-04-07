@@ -18,7 +18,7 @@ pub struct Data {
 pub enum Kind {
     Dir(Vec<Data>),
     File,
-    SmallFiles,
+    SmallFiles(u64),
 }
 
 impl Default for Kind {
@@ -32,7 +32,7 @@ impl Kind {
         match self {
             Kind::Dir(_) => include_image!("../assets/directory.svg"),
             Kind::File => include_image!("../assets/file.svg"),
-            Kind::SmallFiles => include_image!("../assets/file.svg"),
+            Kind::SmallFiles(_) => include_image!("../assets/file.svg"),
         }
     }
 }

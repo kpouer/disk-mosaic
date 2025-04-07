@@ -3,7 +3,9 @@ use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
 use crate::ui::path_bar::PathBar;
 use egui::{Context, Widget};
+use humansize::DECIMAL;
 use log::info;
+use std::ops::{Add, AddAssign};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
@@ -16,8 +18,37 @@ use treemap::{Mappable, TreemapLayout};
 pub enum Message {
     Data(Data),
     DirectoryScanStart(String),
-    DirectoryScanDone(u64),
+    DirectoryScanDone(ScanResult),
     Finished,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct ScanResult {
+    pub(crate) file_count: u64,
+    pub(crate) size: u64,
+}
+
+impl ScanResult {
+    pub(crate) fn add_size(&mut self, size: u64) {
+        self.file_count += 1;
+        self.size += size;
+    }
+}
+
+impl Add for ScanResult {
+    type Output = ScanResult;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl AddAssign for ScanResult {
+    fn add_assign(&mut self, rhs: Self) {
+        self.file_count += rhs.file_count;
+        self.size += rhs.size;
+    }
 }
 
 #[derive(Debug)]
@@ -29,7 +60,7 @@ pub struct Analyzer {
     handle: Option<thread::JoinHandle<()>>,
     scanning: String,
     scanned_directories: u64,
-    scanned_files: u64,
+    scan_result: ScanResult,
 }
 
 impl Analyzer {
@@ -52,7 +83,7 @@ impl Analyzer {
             handle,
             scanning: String::new(),
             scanned_directories: 0,
-            scanned_files: 0,
+            scan_result: ScanResult::default(),
         }
     }
 
@@ -86,7 +117,7 @@ impl Analyzer {
                     self.scanning = d;
                     self.scanned_directories += 1;
                 }
-                Message::DirectoryScanDone(file_count) => self.scanned_files += file_count,
+                Message::DirectoryScanDone(scan_result) => self.scan_result += scan_result,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         match self.data_stack.last_mut() {
@@ -125,6 +156,12 @@ impl Analyzer {
             } else if let Some(index) = PathBar::new(&self.data_stack).show(ui) {
                 clicked_index = Some(index);
             }
+            ui.label(format!(
+                "Directories: {}, Files: {}, Volume {}",
+                self.scanned_directories,
+                self.scan_result.file_count,
+                humansize::format_size(self.scan_result.size, DECIMAL),
+            ));
         });
         clicked_index
     }

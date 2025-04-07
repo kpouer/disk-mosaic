@@ -1,4 +1,4 @@
-use crate::analyzer::Message;
+use crate::analyzer::{Message, ScanResult};
 use crate::data::{Data, Kind};
 use log::{debug, info, warn};
 use rayon::prelude::*;
@@ -91,7 +91,7 @@ impl<'a> Task<'a> {
         let small_file_data = Arc::new(Mutex::new(Data {
             depth,
             name: "Remaining".to_string(),
-            kind: Kind::SmallFiles,
+            kind: Kind::SmallFiles(0),
             size: 0,
             color: Data::next_color(),
             ..Default::default()
@@ -121,10 +121,7 @@ impl<'a> Task<'a> {
                             Some(dir_data)
                         }
                         Err(e) => {
-                            warn!(
-                                "Error recursively scanning directory {:?}: {}",
-                                entry_path, e
-                            );
+                            warn!("Error recursively scanning directory {entry_path:?}: {e}");
                             None
                         }
                     }
@@ -132,6 +129,9 @@ impl<'a> Task<'a> {
                     let size = Data::get_file_size(&entry_path);
                     if size < BIG_FILE_THRESHOLD {
                         let mut d = small_file_data.lock().unwrap();
+                        if let Kind::SmallFiles(count) = &mut d.kind {
+                            *count += 1;
+                        }
                         d.size += size;
                         None
                     } else {
@@ -143,17 +143,30 @@ impl<'a> Task<'a> {
                 }
             })
             .collect();
-        let small_file_data = small_file_data.lock().unwrap();
-        if small_file_data.size > 0 {
-            children.push(small_file_data.clone());
-        }
-        let file_count = children
+        let mut file_result = children
             .par_iter()
             .filter(|data| matches!(data.kind, Kind::File))
-            .count();
-        sender
-            .send(Message::DirectoryScanDone(file_count as u64))
-            .unwrap();
+            .map(|data| ScanResult {
+                file_count: 1,
+                size: data.size,
+            })
+            .reduce(|| ScanResult::default(), |d1, d2| d1 + d2);
+
+        {
+            let small_file_data = small_file_data.lock().unwrap();
+            if small_file_data.size > 0 {
+                children.push(small_file_data.clone());
+            }
+            if let Kind::SmallFiles(count) = small_file_data.kind {
+                file_result.file_count += count;
+            }
+            file_result.size += small_file_data.size;
+        }
+        if file_result.file_count != 0 {
+            sender
+                .send(Message::DirectoryScanDone(file_result))
+                .unwrap();
+        }
         Ok(children)
     }
 
@@ -163,7 +176,12 @@ impl<'a> Task<'a> {
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
     ) {
-        let mut file_count = 0;
+        sender
+            .send(Message::DirectoryScanStart(
+                path.to_string_lossy().to_string(),
+            ))
+            .unwrap();
+        let mut scan_result = ScanResult::default();
         match path.read_dir() {
             Ok(iter) => {
                 let vec = iter.collect::<Vec<_>>();
@@ -173,15 +191,10 @@ impl<'a> Task<'a> {
                         return;
                     }
                     if path.is_dir() {
-                        sender
-                            .send(Message::DirectoryScanStart(
-                                path.to_string_lossy().to_string(),
-                            ))
-                            .unwrap();
                         Task::new(depth, path, sender, stopper, sender.clone()).run();
                     } else if path.is_file() {
-                        file_count += 1;
                         let size = Data::get_file_size(&path);
+                        scan_result.add_size(size);
                         sender
                             .send(Message::Data(Data::new_file(&path, size, depth)))
                             .unwrap();
@@ -193,6 +206,8 @@ impl<'a> Task<'a> {
                 _ => debug!("Error reading directory: {path:?}, {e:?}"),
             },
         }
-        sender.send(Message::DirectoryScanDone(file_count)).unwrap();
+        sender
+            .send(Message::DirectoryScanDone(scan_result))
+            .unwrap();
     }
 }
