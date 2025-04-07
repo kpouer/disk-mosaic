@@ -53,7 +53,6 @@ impl AddAssign for ScanResult {
 
 #[derive(Debug)]
 pub struct Analyzer {
-    modified_in_this_frame: bool,
     data_stack: Vec<Data>,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
@@ -76,7 +75,6 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            modified_in_this_frame: false,
             data_stack: vec![Data::new_directory(&root, 0)],
             rx,
             stopper: Some(stopper),
@@ -97,7 +95,6 @@ impl Analyzer {
                     if let Some(parent_data) = self.data_stack.get_mut(index) {
                         if let Kind::Dir(children) = &mut parent_data.kind {
                             children.push(popped_data);
-                            self.modified_in_this_frame = true;
                         } else {
                             log::error!("Invalid kind ({parent_data:?})");
                         }
@@ -121,10 +118,7 @@ impl Analyzer {
                 Message::Data(data) => {
                     if data.size() > 0.0 {
                         match self.data_stack.last_mut() {
-                            Some(current_data) => {
-                                current_data.push(data);
-                                self.modified_in_this_frame = true;
-                            }
+                            Some(current_data) => current_data.push(data),
                             None => log::error!("Data stack is empty when receiving data"),
                         }
                     }
@@ -178,10 +172,7 @@ impl Analyzer {
             let mut clicked_data_index = None;
             if let Some(current_data) = self.data_stack.last_mut() {
                 if let Kind::Dir(children) = &mut current_data.kind {
-                    if self.modified_in_this_frame {
-                        TreemapLayout::new().layout_items(children, rect);
-                        self.modified_in_this_frame = false;
-                    }
+                    TreemapLayout::new().layout_items(children, rect);
                     children
                         .iter()
                         .enumerate()
