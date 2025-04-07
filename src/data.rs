@@ -40,9 +40,8 @@ impl Kind {
 static INDEX: AtomicUsize = AtomicUsize::new(0);
 
 impl Data {
-    pub fn new_directory(path: &Path, depth: u16) -> Self {
+    pub fn new_directory(path: &Path) -> Self {
         Self {
-            depth,
             name: Self::get_file_name(path),
             kind: Default::default(),
             color: Self::next_color(),
@@ -50,9 +49,8 @@ impl Data {
         }
     }
 
-    pub fn new_file(path: &Path, size: u64, depth: u16) -> Self {
+    pub fn new_file(path: &Path, size: u64) -> Self {
         Self {
-            depth,
             name: Self::get_file_name(path),
             kind: Kind::File,
             size,

@@ -10,8 +10,6 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct Task<'a> {
-    /// the depth that will be set for the children of that task
-    depth: u16,
     path: PathBuf,
     tx: &'a Sender<Message>,
     stopper: &'a Arc<AtomicBool>,
@@ -22,14 +20,12 @@ const BIG_FILE_THRESHOLD: u64 = 10000000;
 
 impl<'a> Task<'a> {
     pub fn new(
-        depth: u16,
         path: PathBuf,
         tx: &'a Sender<Message>,
         stopper: &'a Arc<AtomicBool>,
         sender: Sender<Message>,
     ) -> Self {
         Self {
-            depth,
             path,
             tx,
             stopper,
@@ -39,16 +35,15 @@ impl<'a> Task<'a> {
 
     pub fn run(self) {
         let Self {
-            depth,
             path,
             tx,
             stopper,
             sender,
         } = self;
 
-        let mut data = Data::new_directory(&path, self.depth);
+        let mut data = Data::new_directory(&path);
 
-        match Self::scan_directory_recursive(&path, self.depth, stopper, &sender) {
+        match Self::scan_directory_recursive(&path, stopper, &sender) {
             Ok(children) => {
                 data.set_nodes(children);
             }
@@ -64,7 +59,6 @@ impl<'a> Task<'a> {
 
     fn scan_directory_recursive(
         path: &Path,
-        depth: u16,
         stopper: &Arc<AtomicBool>,
         sender: &Sender<Message>,
     ) -> Result<Vec<Data>, Error> {
@@ -89,7 +83,6 @@ impl<'a> Task<'a> {
         };
 
         let small_file_data = Arc::new(Mutex::new(Data {
-            depth,
             name: "Remaining".to_string(),
             kind: Kind::SmallFiles(0),
             size: 0,
@@ -114,9 +107,9 @@ impl<'a> Task<'a> {
                     }
                 };
                 if metadata.is_dir() {
-                    match Self::scan_directory_recursive(&entry_path, depth + 1, stopper, sender) {
+                    match Self::scan_directory_recursive(&entry_path, stopper, sender) {
                         Ok(grandchildren) => {
-                            let mut dir_data = Data::new_directory(&entry_path, depth + 1);
+                            let mut dir_data = Data::new_directory(&entry_path);
                             dir_data.set_nodes(grandchildren);
                             Some(dir_data)
                         }
@@ -135,7 +128,7 @@ impl<'a> Task<'a> {
                         d.size += size;
                         None
                     } else {
-                        Some(Data::new_file(&entry_path, size, depth + 1))
+                        Some(Data::new_file(&entry_path, size))
                     }
                 } else {
                     // Ignore symlinks, sockets, etc.
@@ -171,7 +164,6 @@ impl<'a> Task<'a> {
     }
 
     pub fn scan_directory_channel(
-        depth: u16,
         path: &Path,
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
@@ -191,12 +183,12 @@ impl<'a> Task<'a> {
                         return;
                     }
                     if path.is_dir() {
-                        Task::new(depth, path, sender, stopper, sender.clone()).run();
+                        Task::new(path, sender, stopper, sender.clone()).run();
                     } else if path.is_file() {
                         let size = Data::get_file_size(&path);
                         scan_result.add_size(size);
                         sender
-                            .send(Message::Data(Data::new_file(&path, size, depth)))
+                            .send(Message::Data(Data::new_file(&path, size)))
                             .unwrap();
                     }
                 });

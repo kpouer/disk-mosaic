@@ -70,12 +70,12 @@ impl Analyzer {
         let stopper_copy = stopper.clone();
         let handle = Some(thread::spawn(move || {
             let start = std::time::Instant::now();
-            Task::scan_directory_channel(1, &root_copy, &tx, &stopper_copy);
+            Task::scan_directory_channel(&root_copy, &tx, &stopper_copy);
             tx.send(Message::Finished).unwrap();
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            data_stack: vec![Data::new_directory(&root, 0)],
+            data_stack: vec![Data::new_directory(&root)],
             rx,
             stopper: Some(stopper),
             handle,
