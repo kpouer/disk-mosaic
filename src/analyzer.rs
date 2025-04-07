@@ -191,7 +191,7 @@ impl Analyzer {
                 if let Some(current_data) = self.data_stack.last_mut() {
                     if let Kind::Dir(children) = &mut current_data.kind {
                         if clicked_index < children.len() {
-                            let taken_data = std::mem::take(&mut children[clicked_index]);
+                            let taken_data = children.swap_remove(clicked_index); // swapremove because it is faster than a normal remove
                             self.data_stack.push(taken_data);
                         }
                     }
