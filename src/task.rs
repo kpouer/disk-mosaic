@@ -150,7 +150,7 @@ impl<'a> Task<'a> {
                 file_count: 1,
                 size: data.size,
             })
-            .reduce(|| ScanResult::default(), |d1, d2| d1 + d2);
+            .reduce(ScanResult::default, |d1, d2| d1 + d2);
 
         {
             let small_file_data = small_file_data.lock().unwrap();
