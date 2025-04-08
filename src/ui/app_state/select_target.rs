@@ -1,3 +1,4 @@
+use crate::ui::about_dialog::AboutDialog;
 use egui::{Context, ScrollArea};
 use home::home_dir;
 use humansize::DECIMAL;
@@ -7,6 +8,7 @@ use sysinfo::{Disk, Disks};
 #[derive(Debug)]
 pub(crate) struct SelectTarget {
     disks: Vec<DiskLabel>,
+    about_open: bool,
 }
 
 impl Default for SelectTarget {
@@ -15,7 +17,10 @@ impl Default for SelectTarget {
             .iter()
             .map(DiskLabel::from)
             .collect();
-        Self { disks }
+        Self {
+            disks,
+            about_open: false,
+        }
     }
 }
 
@@ -49,11 +54,16 @@ impl From<&Disk> for DiskLabel {
 }
 
 impl SelectTarget {
-    pub fn show(&self, ctx: &Context) -> Option<PathBuf> {
-        egui::CentralPanel::default()
+    pub fn show(&mut self, ctx: &Context) -> Option<PathBuf> {
+        let inner = egui::CentralPanel::default()
             .show(ctx, |ui| {
                 let mut selected_path = None;
-                ui.heading("Select Scan Target");
+                ui.horizontal(|ui| {
+                    ui.heading("Select Scan Target");
+                    if ui.button("About").clicked() {
+                        self.about_open = true;
+                    }
+                });
                 ui.separator();
 
                 ui.label("Available Disks/Mounts:");
@@ -94,6 +104,8 @@ impl SelectTarget {
 
                 selected_path
             })
-            .inner
+            .inner;
+        AboutDialog::new(&mut self.about_open).show(ctx);
+        inner
     }
 }

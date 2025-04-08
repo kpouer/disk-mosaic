@@ -1,6 +1,7 @@
 use crate::analysis_result::AnalysisResult;
 use crate::data::Data;
 use crate::task::Task;
+use crate::ui::about_dialog::AboutDialog;
 use crate::ui::path_bar::PathBar;
 use crate::ui::treemap_panel::TreeMapPanel;
 use egui::Context;
@@ -61,6 +62,7 @@ pub struct Analyzer {
     scanning: String,
     scanned_directories: u64,
     scan_result: ScanResult,
+    about_open: bool,
 }
 
 impl Analyzer {
@@ -83,6 +85,7 @@ impl Analyzer {
             scanning: String::new(),
             scanned_directories: 0,
             scan_result: ScanResult::default(),
+            about_open: false,
         }
     }
 
@@ -129,30 +132,37 @@ impl Analyzer {
     fn show_top_panel(&mut self, ctx: &Context) -> Option<usize> {
         let mut clicked_index = None;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            if let Some(handle) = &self.handle {
-                if handle.is_finished() {
-                    self.handle = None;
+            ui.horizontal(|ui| {
+                if let Some(handle) = &self.handle {
+                    if handle.is_finished() {
+                        self.handle = None;
+                    }
                 }
-            }
-            if self.handle.is_some() {
-                ui.horizontal(|ui| {
+                if self.handle.is_some() {
                     if let Some(stopper) = &self.stopper {
                         if ui.button("Stop").clicked() {
                             stopper.store(true, std::sync::atomic::Ordering::Relaxed);
                         }
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
-                });
-            } else if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
-                clicked_index = Some(index);
-            }
-            ui.label(format!(
-                "Directories: {}, Files: {}, Volume {}",
-                self.scanned_directories,
-                self.scan_result.file_count,
-                humansize::format_size(self.scan_result.size, DECIMAL),
-            ));
+                } else {
+                    if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
+                        clicked_index = Some(index);
+                    }
+                    ui.label(format!(
+                        "Directories: {}, Files: {}, Volume {}",
+                        self.scanned_directories,
+                        self.scan_result.file_count,
+                        humansize::format_size(self.scan_result.size, DECIMAL),
+                    ));
+                }
+                if ui.button("About").clicked() {
+                    self.about_open = true;
+                }
+            });
         });
+
+        AboutDialog::new(&mut self.about_open).show(ctx);
         clicked_index
     }
 }
