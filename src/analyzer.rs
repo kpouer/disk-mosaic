@@ -1,3 +1,4 @@
+use crate::analysis_result::AnalysisResult;
 use crate::data::{Data, Kind};
 use crate::task::Task;
 use crate::ui::data_widget::DataWidget;
@@ -53,7 +54,7 @@ impl AddAssign for ScanResult {
 
 #[derive(Debug)]
 pub struct Analyzer {
-    data_stack: Vec<Data>,
+    analyzis_result: AnalysisResult,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
@@ -75,7 +76,7 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            data_stack: vec![Data::new_directory(&root)],
+            analyzis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
             rx,
             stopper: Some(stopper),
             handle,
@@ -90,9 +91,9 @@ impl Analyzer {
 
         if let Some(index) = self.show_top_panel(ctx) {
             // index was clicked
-            while index < self.data_stack.len() - 1 {
-                if let Some(popped_data) = self.data_stack.pop() {
-                    if let Some(parent_data) = self.data_stack.last_mut() {
+            while index < self.analyzis_result.data_stack.len() - 1 {
+                if let Some(popped_data) = self.analyzis_result.data_stack.pop() {
+                    if let Some(parent_data) = self.analyzis_result.data_stack.last_mut() {
                         if let Kind::Dir(children) = &mut parent_data.kind {
                             info!("Pushing {} into {}", popped_data.name, parent_data.name);
                             children.push(popped_data);
@@ -118,7 +119,7 @@ impl Analyzer {
                 Message::DirectoryScanDone(scan_result) => self.scan_result += scan_result,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
-                        match self.data_stack.last_mut() {
+                        match self.analyzis_result.data_stack.last_mut() {
                             Some(current_data) => current_data.push(data),
                             None => log::error!("Data stack is empty when receiving data"),
                         }
@@ -148,7 +149,7 @@ impl Analyzer {
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
                 });
-            } else if let Some(index) = PathBar::new(&self.data_stack).show(ui) {
+            } else if let Some(index) = PathBar::new(&self.analyzis_result.data_stack).show(ui) {
                 clicked_index = Some(index);
             }
             ui.label(format!(
@@ -171,7 +172,7 @@ impl Analyzer {
                 clip_rect.height() as f64,
             );
             let mut clicked_data_index = None;
-            if let Some(current_data) = self.data_stack.last_mut() {
+            if let Some(current_data) = self.analyzis_result.data_stack.last_mut() {
                 if let Kind::Dir(children) = &mut current_data.kind {
                     TreemapLayout::new().layout_items(children, rect);
                     children
@@ -189,11 +190,11 @@ impl Analyzer {
             }
 
             if let Some(clicked_index) = clicked_data_index {
-                if let Some(current_data) = self.data_stack.last_mut() {
+                if let Some(current_data) = self.analyzis_result.data_stack.last_mut() {
                     if let Kind::Dir(children) = &mut current_data.kind {
                         if clicked_index < children.len() {
                             let taken_data = children.swap_remove(clicked_index); // swapremove because it is faster than a normal remove
-                            self.data_stack.push(taken_data);
+                            self.analyzis_result.data_stack.push(taken_data);
                         }
                     }
                 }
