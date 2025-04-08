@@ -31,7 +31,6 @@ impl eframe::App for DiskAnalyzerApp {
                 }
             }
             AppState::Analyzing(analyzer) => {
-                // show now handles navigation internally
                 if analyzer.show(ctx) {
                     let analysis_result = std::mem::take(&mut analyzer.analysis_result);
                     self.state = AppState::Analyzed(ResultView::new(analysis_result));

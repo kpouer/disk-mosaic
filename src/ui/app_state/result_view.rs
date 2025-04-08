@@ -1,7 +1,10 @@
 use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::ui::data_widget::DataWidget;
+use crate::ui::path_bar::PathBar;
 use egui::{Context, Widget};
+use humansize::DECIMAL;
+use log::info;
 use treemap::TreemapLayout;
 
 #[derive(Debug)]
@@ -15,6 +18,22 @@ impl ResultView {
     }
 
     pub(crate) fn show(&mut self, ctx: &Context) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
+                while index < self.analysis_result.data_stack.len() - 1 {
+                    if let Some(popped_data) = self.analysis_result.data_stack.pop() {
+                        if let Some(parent_data) = self.analysis_result.data_stack.last_mut() {
+                            if let Kind::Dir(children) = &mut parent_data.kind {
+                                info!("Pushing {} into {}", popped_data.name, parent_data.name);
+                                children.push(popped_data);
+                            } else {
+                                log::error!("Invalid kind ({parent_data:?})");
+                            }
+                        }
+                    }
+                }
+            }
+        });
         self.show_central_panel(ctx);
     }
 
