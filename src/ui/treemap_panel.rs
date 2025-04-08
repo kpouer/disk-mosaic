@@ -43,7 +43,7 @@ impl<'a> TreeMapPanel<'a> {
             if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
                 if let Kind::Dir(children) = &mut current_data.kind {
                     if clicked_index < children.len() {
-                        let taken_data = children.swap_remove(clicked_index); // swapremove because it is faster than a normal remove
+                        let taken_data = children.swap_remove(clicked_index); // swap_remove because it is faster than a normal remove
                         self.analysis_result.data_stack.push(taken_data);
                     }
                 }
