@@ -37,9 +37,7 @@ impl eframe::App for DiskAnalyzerApp {
                     self.state = AppState::Analyzed(ResultView::new(analysis_result));
                 }
             }
-            AppState::Analyzed(result_view) => {
-                result_view.show(ctx);
-            }
+            AppState::Analyzed(result_view) => result_view.show(ctx),
         }
     }
 }
