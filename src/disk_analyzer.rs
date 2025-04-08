@@ -1,11 +1,13 @@
-use crate::analyzer::Analyzer;
-use crate::ui::select_target::SelectTarget;
+use crate::ui::app_state::analyzer::Analyzer;
+use crate::ui::app_state::result_view::ResultView;
+use crate::ui::app_state::select_target::SelectTarget;
 use log::info;
 
 #[derive(Debug)]
-pub enum AppState {
+enum AppState {
     SelectDisk(SelectTarget),
     Analyzing(Analyzer),
+    Analyzed(ResultView),
 }
 
 impl Default for AppState {
@@ -30,7 +32,13 @@ impl eframe::App for DiskAnalyzerApp {
             }
             AppState::Analyzing(analyzer) => {
                 // show now handles navigation internally
-                analyzer.show(ctx);
+                if analyzer.show(ctx) {
+                    let analysis_result = std::mem::take(&mut analyzer.analysis_result);
+                    self.state = AppState::Analyzed(ResultView::new(analysis_result));
+                }
+            }
+            AppState::Analyzed(result_view) => {
+                result_view.show(ctx);
             }
         }
     }

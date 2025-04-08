@@ -1,5 +1,4 @@
 mod analysis_result;
-mod analyzer;
 mod data;
 mod disk_analyzer;
 mod task;

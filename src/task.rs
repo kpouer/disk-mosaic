@@ -1,5 +1,5 @@
-use crate::analyzer::{Message, ScanResult};
 use crate::data::{Data, Kind};
+use crate::ui::app_state::analyzer::{Message, ScanResult};
 use log::{debug, info, warn};
 use rayon::prelude::*;
 use std::io::{Error, ErrorKind};

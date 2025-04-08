@@ -54,7 +54,7 @@ impl AddAssign for ScanResult {
 
 #[derive(Debug)]
 pub struct Analyzer {
-    analyzis_result: AnalysisResult,
+    pub(crate) analysis_result: AnalysisResult,
     rx: Receiver<Message>,
     stopper: Option<Arc<AtomicBool>>,
     handle: Option<thread::JoinHandle<()>>,
@@ -76,7 +76,7 @@ impl Analyzer {
             info!("Done in {}s", start.elapsed().as_millis());
         }));
         Self {
-            analyzis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
+            analysis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
             rx,
             stopper: Some(stopper),
             handle,
@@ -86,14 +86,14 @@ impl Analyzer {
         }
     }
 
-    pub(crate) fn show(&mut self, ctx: &Context) {
-        self.receive_data();
+    pub(crate) fn show(&mut self, ctx: &Context) -> bool {
+        let finished = self.receive_data();
 
         if let Some(index) = self.show_top_panel(ctx) {
             // index was clicked
-            while index < self.analyzis_result.data_stack.len() - 1 {
-                if let Some(popped_data) = self.analyzis_result.data_stack.pop() {
-                    if let Some(parent_data) = self.analyzis_result.data_stack.last_mut() {
+            while index < self.analysis_result.data_stack.len() - 1 {
+                if let Some(popped_data) = self.analysis_result.data_stack.pop() {
+                    if let Some(parent_data) = self.analysis_result.data_stack.last_mut() {
                         if let Kind::Dir(children) = &mut parent_data.kind {
                             info!("Pushing {} into {}", popped_data.name, parent_data.name);
                             children.push(popped_data);
@@ -107,9 +107,11 @@ impl Analyzer {
 
         self.show_central_panel(ctx);
         ctx.request_repaint_after(Duration::from_millis(60));
+        finished
     }
 
-    fn receive_data(&mut self) {
+    fn receive_data(&mut self) -> bool {
+        let mut finished = false;
         for message in self.rx.try_iter() {
             match message {
                 Message::DirectoryScanStart(d) => {
@@ -119,7 +121,7 @@ impl Analyzer {
                 Message::DirectoryScanDone(scan_result) => self.scan_result += scan_result,
                 Message::Data(data) => {
                     if data.size() > 0.0 {
-                        match self.analyzis_result.data_stack.last_mut() {
+                        match self.analysis_result.data_stack.last_mut() {
                             Some(current_data) => current_data.push(data),
                             None => log::error!("Data stack is empty when receiving data"),
                         }
@@ -127,9 +129,11 @@ impl Analyzer {
                 }
                 Message::Finished => {
                     info!("Scan finished");
+                    finished = true;
                 }
             }
         }
+        finished
     }
 
     fn show_top_panel(&mut self, ctx: &Context) -> Option<usize> {
@@ -149,7 +153,7 @@ impl Analyzer {
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
                 });
-            } else if let Some(index) = PathBar::new(&self.analyzis_result.data_stack).show(ui) {
+            } else if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
                 clicked_index = Some(index);
             }
             ui.label(format!(
@@ -172,7 +176,7 @@ impl Analyzer {
                 clip_rect.height() as f64,
             );
             let mut clicked_data_index = None;
-            if let Some(current_data) = self.analyzis_result.data_stack.last_mut() {
+            if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
                 if let Kind::Dir(children) = &mut current_data.kind {
                     TreemapLayout::new().layout_items(children, rect);
                     children
@@ -190,11 +194,11 @@ impl Analyzer {
             }
 
             if let Some(clicked_index) = clicked_data_index {
-                if let Some(current_data) = self.analyzis_result.data_stack.last_mut() {
+                if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
                     if let Kind::Dir(children) = &mut current_data.kind {
                         if clicked_index < children.len() {
                             let taken_data = children.swap_remove(clicked_index); // swapremove because it is faster than a normal remove
-                            self.analyzis_result.data_stack.push(taken_data);
+                            self.analysis_result.data_stack.push(taken_data);
                         }
                     }
                 }

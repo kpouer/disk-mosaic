@@ -1,6 +1,6 @@
 use crate::data::Data;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct AnalysisResult {
     pub(crate) data_stack: Vec<Data>,
 }
