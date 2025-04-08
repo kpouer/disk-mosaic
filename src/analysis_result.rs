@@ -1,4 +1,5 @@
-use crate::data::Data;
+use crate::data::{Data, Kind};
+use log::info;
 
 #[derive(Debug, Default)]
 pub(crate) struct AnalysisResult {
@@ -8,5 +9,20 @@ pub(crate) struct AnalysisResult {
 impl AnalysisResult {
     pub(crate) fn new(data_stack: Vec<Data>) -> AnalysisResult {
         Self { data_stack }
+    }
+
+    pub(crate) fn selected_index(&mut self, index: usize) {
+        while index < self.data_stack.len() - 1 {
+            if let Some(popped_data) = self.data_stack.pop() {
+                if let Some(parent_data) = self.data_stack.last_mut() {
+                    if let Kind::Dir(children) = &mut parent_data.kind {
+                        info!("Pushing {} into {}", popped_data.name, parent_data.name);
+                        children.push(popped_data);
+                    } else {
+                        log::error!("Invalid kind ({parent_data:?})");
+                    }
+                }
+            }
+        }
     }
 }

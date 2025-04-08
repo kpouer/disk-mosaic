@@ -90,19 +90,7 @@ impl Analyzer {
         let finished = self.receive_data();
 
         if let Some(index) = self.show_top_panel(ctx) {
-            // index was clicked
-            while index < self.analysis_result.data_stack.len() - 1 {
-                if let Some(popped_data) = self.analysis_result.data_stack.pop() {
-                    if let Some(parent_data) = self.analysis_result.data_stack.last_mut() {
-                        if let Kind::Dir(children) = &mut parent_data.kind {
-                            info!("Pushing {} into {}", popped_data.name, parent_data.name);
-                            children.push(popped_data);
-                        } else {
-                            log::error!("Invalid kind ({parent_data:?})");
-                        }
-                    }
-                }
-            }
+            self.analysis_result.selected_index(index);
         }
 
         self.show_central_panel(ctx);
