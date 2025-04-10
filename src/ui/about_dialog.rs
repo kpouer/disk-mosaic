@@ -1,4 +1,4 @@
-use egui::{Button, Context, Image, Pos2, Rect, Vec2, include_image};
+use egui::{Button, Context, Image, include_image};
 
 pub(crate) struct AboutDialog<'a> {
     open: &'a mut bool,
@@ -13,18 +13,11 @@ impl<'a> AboutDialog<'a> {
 
     pub(crate) fn show_button(&mut self, ctx: &Context, ui: &mut egui::Ui) {
         ui.add_space(ui.available_width() - BUTTON_SIZE);
-        let max_rect = ui.max_rect();
         if ui
-            .put(
-                Rect::from_min_size(
-                    Pos2::new(max_rect.right() - BUTTON_SIZE, max_rect.top()),
-                    Vec2::new(BUTTON_SIZE, BUTTON_SIZE),
-                ),
-                Button::image(
-                    Image::from(include_image!("../../assets/question-mark.svg"))
-                        .tint(ctx.style().visuals.widgets.noninteractive.text_color()),
-                ),
-            )
+            .add(Button::image(
+                Image::from(include_image!("../../assets/question-mark.svg"))
+                    .tint(ctx.style().visuals.widgets.noninteractive.text_color()),
+            ))
             .clicked()
         {
             *self.open = true;

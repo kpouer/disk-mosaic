@@ -4,7 +4,6 @@ use crate::task::Task;
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::path_bar::PathBar;
 use crate::ui::treemap_panel::TreeMapPanel;
-use egui::accesskit::Vec2;
 use egui::{Context, Label};
 use humansize::DECIMAL;
 use log::info;
@@ -67,6 +66,8 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
+    /// Create a new analyzer.
+    /// The analyzer will scan the given directory and all subdirectories in a thread.
     pub(crate) fn new(root: PathBuf) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         let stopper = Arc::new(AtomicBool::new(false));
@@ -76,7 +77,7 @@ impl Analyzer {
             let start = std::time::Instant::now();
             Task::scan_directory_channel(&root_copy, &tx, &stopper_copy);
             tx.send(Message::Finished).unwrap();
-            info!("Done in {}s", start.elapsed().as_millis());
+            info!("Done in {}ms", start.elapsed().as_millis());
         }));
         Self {
             analysis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
@@ -150,12 +151,13 @@ impl Analyzer {
                     if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
                         clicked_index = Some(index);
                     }
-                    ui.label(format!(
+                    let scanning_label = Label::new(format!(
                         "Directories: {}, Files: {}, Volume {}",
                         self.scanned_directories,
                         self.scan_result.file_count,
-                        humansize::format_size(self.scan_result.size, DECIMAL),
+                        humansize::format_size(self.scan_result.size, DECIMAL)
                     ));
+                    ui.add(scanning_label);
                 }
                 AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
             });
