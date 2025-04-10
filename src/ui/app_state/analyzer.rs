@@ -57,7 +57,7 @@ impl AddAssign for ScanResult {
 pub struct Analyzer {
     pub(crate) analysis_result: AnalysisResult,
     rx: Receiver<Message>,
-    stopper: Option<Arc<AtomicBool>>,
+    stopper: Arc<AtomicBool>,
     handle: Option<thread::JoinHandle<()>>,
     scanning: String,
     scanned_directories: u64,
@@ -82,7 +82,7 @@ impl Analyzer {
         Self {
             analysis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
             rx,
-            stopper: Some(stopper),
+            stopper,
             handle,
             scanning: String::new(),
             scanned_directories: 0,
@@ -141,10 +141,9 @@ impl Analyzer {
                     }
                 }
                 if self.handle.is_some() {
-                    if let Some(stopper) = &self.stopper {
-                        if ui.button("Stop").clicked() {
-                            stopper.store(true, std::sync::atomic::Ordering::Relaxed);
-                        }
+                    if ui.button("Stop").clicked() {
+                        self.stopper
+                            .store(true, std::sync::atomic::Ordering::Relaxed);
                     }
                     ui.label(format!("Scanning: {}", self.scanning));
                 } else {
