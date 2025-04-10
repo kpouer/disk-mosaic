@@ -4,7 +4,8 @@ use crate::task::Task;
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::path_bar::PathBar;
 use crate::ui::treemap_panel::TreeMapPanel;
-use egui::Context;
+use egui::accesskit::Vec2;
+use egui::{Context, Label};
 use humansize::DECIMAL;
 use log::info;
 use std::ops::{Add, AddAssign};
@@ -156,9 +157,7 @@ impl Analyzer {
                         humansize::format_size(self.scan_result.size, DECIMAL),
                     ));
                 }
-                if ui.button("About").clicked() {
-                    self.about_open = true;
-                }
+                AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
             });
         });
 

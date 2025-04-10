@@ -60,9 +60,7 @@ impl SelectTarget {
                 let mut selected_path = None;
                 ui.horizontal(|ui| {
                     ui.heading("Select Scan Target");
-                    if ui.button("About").clicked() {
-                        self.about_open = true;
-                    }
+                    AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
                 });
                 ui.separator();
 

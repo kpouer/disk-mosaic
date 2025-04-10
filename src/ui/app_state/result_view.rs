@@ -26,9 +26,7 @@ impl ResultView {
                 if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
                     self.analysis_result.selected_index(index);
                 }
-                if ui.button("About").clicked() {
-                    self.about_open = true;
-                }
+                AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
             });
         });
         AboutDialog::new(&mut self.about_open).show(ctx);
