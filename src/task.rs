@@ -72,6 +72,8 @@ impl<'a> Task<'a> {
                 let iter = iter.flatten();
                 #[cfg(target_os = "macos")]
                 let iter = iter.filter(|p| !p.path().starts_with("/System/Volumes"));
+                #[cfg(target_os = "linux")]
+                let iter = iter.filter(|p| !p.path().starts_with("/proc"));
                 iter.collect::<Vec<_>>()
             }
             Err(e) => {
