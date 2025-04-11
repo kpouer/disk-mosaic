@@ -11,7 +11,7 @@ fn main() -> eframe::Result {
     env_logger::init();
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "Disk Analyzer",
+        "Disk Mosaic",
         options,
         Box::new(|ctx| {
             install_image_loaders(&ctx.egui_ctx);

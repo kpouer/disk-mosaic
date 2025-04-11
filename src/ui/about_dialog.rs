@@ -28,10 +28,10 @@ impl<'a> AboutDialog<'a> {
     }
 
     fn show(&mut self, ctx: &Context) {
-        egui::Window::new("About Disk Analyzer")
+        egui::Window::new("About Disk Mosaic")
             .open(self.open)
             .show(ctx, |ui| {
-                ui.label("Disk Analyzer");
+                ui.label("Disk Mosaic");
                 ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
                 ui.label("Created by Matthieu Casanova");
             });
