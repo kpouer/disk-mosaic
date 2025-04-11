@@ -20,9 +20,13 @@ impl ResultView {
 }
 
 impl ResultView {
-    pub(crate) fn show(&mut self, ctx: &Context) {
+    pub(crate) fn show(&mut self, ctx: &Context) -> bool {
+        let mut go_back = false;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
+                if ui.button("⬅ Back").clicked() {
+                    go_back = true;
+                }
                 if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
                     self.analysis_result.selected_index(index);
                 }
@@ -32,5 +36,7 @@ impl ResultView {
         egui::CentralPanel::default().show(ctx, |ui| {
             TreeMapPanel::new(&mut self.analysis_result).show(ui);
         });
+
+        go_back
     }
 }

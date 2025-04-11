@@ -52,6 +52,13 @@ impl AddAssign for ScanResult {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum AnalyzerUpdate {
+    Running,
+    Finished,
+    GoBack,
+}
+
 #[derive(Debug)]
 pub struct Analyzer {
     pub(crate) analysis_result: AnalysisResult,
@@ -89,17 +96,26 @@ impl Analyzer {
         }
     }
 
-    pub(crate) fn show(&mut self, ctx: &Context) -> bool {
+    pub(crate) fn show(&mut self, ctx: &Context) -> AnalyzerUpdate {
         self.receive_data();
-        if let Some(index) = self.show_top_panel(ctx) {
-            self.analysis_result.selected_index(index);
+        let top_panel_result = self.show_top_panel(ctx);
+
+        if top_panel_result == AnalyzerUpdate::GoBack {
+            info!("Stop requested via Back button");
+            self.stopper.store(true, Ordering::Relaxed);
+            return AnalyzerUpdate::GoBack;
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
             TreeMapPanel::new(&mut self.analysis_result).show(ui);
         });
         ctx.request_repaint_after(Duration::from_millis(60));
-        self.handle.is_finished()
+
+        if self.handle.is_finished() {
+            AnalyzerUpdate::Finished
+        } else {
+            AnalyzerUpdate::Running
+        }
     }
 
     fn receive_data(&mut self) {
@@ -122,17 +138,22 @@ impl Analyzer {
         }
     }
 
-    fn show_top_panel(&mut self, ctx: &Context) -> Option<usize> {
-        let mut clicked_index = None;
+    fn show_top_panel(&mut self, ctx: &Context) -> AnalyzerUpdate {
+        let mut update_status = AnalyzerUpdate::Running;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
+                if ui.button("⬅ Back").clicked() {
+                    update_status = AnalyzerUpdate::GoBack;
+                }
                 if ui.button("Stop").clicked() {
-                    info!("Stop requested");
+                    info!("Stop requested via Stop button");
                     self.stopper.store(true, Ordering::Relaxed);
                 }
-                clicked_index = PathBar::new(&self.analysis_result.data_stack).show(ui);
+                if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
+                    self.analysis_result.selected_index(index);
+                }
                 let scanning_label = Label::new(format!(
-                    "Directories: {}, Files: {}, Volume {}, scanning {}",
+                    "Dirs: {}, Files: {}, Size: {}, scanning {}",
                     self.scanned_directories,
                     self.scan_result.file_count,
                     humansize::format_size(self.scan_result.size, DECIMAL),
@@ -143,6 +164,6 @@ impl Analyzer {
             });
         });
 
-        clicked_index
+        update_status
     }
 }
