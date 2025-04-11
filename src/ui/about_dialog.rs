@@ -32,7 +32,7 @@ impl<'a> AboutDialog<'a> {
             .open(self.open)
             .show(ctx, |ui| {
                 ui.label("Disk Analyzer");
-                ui.label("Version 0.1.0");
+                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
                 ui.label("Created by Matthieu Casanova");
             });
     }
