@@ -55,7 +55,7 @@ impl From<&Disk> for DiskLabel {
 
 impl SelectTarget {
     pub fn show(&mut self, ctx: &Context) -> Option<PathBuf> {
-        let inner = egui::CentralPanel::default()
+        egui::CentralPanel::default()
             .show(ctx, |ui| {
                 let mut selected_path = None;
                 ui.horizontal(|ui| {
@@ -102,8 +102,6 @@ impl SelectTarget {
 
                 selected_path
             })
-            .inner;
-        AboutDialog::new(&mut self.about_open).show(ctx);
-        inner
+            .inner
     }
 }

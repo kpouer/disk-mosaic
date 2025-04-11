@@ -22,9 +22,12 @@ impl<'a> AboutDialog<'a> {
         {
             *self.open = true;
         }
+        if *self.open {
+            self.show(ctx);
+        }
     }
 
-    pub(crate) fn show(&mut self, ctx: &Context) {
+    fn show(&mut self, ctx: &Context) {
         egui::Window::new("About Disk Analyzer")
             .open(self.open)
             .show(ctx, |ui| {

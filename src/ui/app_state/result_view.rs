@@ -29,7 +29,6 @@ impl ResultView {
                 AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
             });
         });
-        AboutDialog::new(&mut self.about_open).show(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
             TreeMapPanel::new(&mut self.analysis_result).show(ui);
         });

@@ -143,7 +143,6 @@ impl Analyzer {
             });
         });
 
-        AboutDialog::new(&mut self.about_open).show(ctx);
         clicked_index
     }
 }
