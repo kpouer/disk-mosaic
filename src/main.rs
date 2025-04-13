@@ -1,6 +1,7 @@
 mod analysis_result;
 mod data;
 mod disk_analyzer;
+mod service;
 mod task;
 mod ui;
 

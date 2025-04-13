@@ -1,56 +1,17 @@
+use crate::service::storage_manager::StorageManager;
+use crate::service::storage_manager::storage::Storage;
 use crate::ui::about_dialog::AboutDialog;
-use egui::{Context, ScrollArea};
+use egui::{
+    Button, Context, CursorIcon, Frame, Label, ProgressBar, Rect, Response, RichText, ScrollArea,
+    Sense, Ui, UiBuilder, Vec2, Widget,
+};
 use home::home_dir;
-use humansize::DECIMAL;
 use std::path::PathBuf;
-use sysinfo::{Disk, Disks};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct SelectTarget {
-    disks: Vec<DiskLabel>,
+    storage_manager: StorageManager,
     about_open: bool,
-}
-
-impl Default for SelectTarget {
-    fn default() -> Self {
-        let disks = Disks::new_with_refreshed_list()
-            .iter()
-            .map(DiskLabel::from)
-            .collect();
-        Self {
-            disks,
-            about_open: false,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct DiskLabel {
-    mount_point: PathBuf,
-    label: String,
-}
-
-impl From<&Disk> for DiskLabel {
-    fn from(disk: &Disk) -> Self {
-        let mount_point = disk.mount_point();
-        let total = disk.total_space();
-        let available = disk.available_space();
-        let used = total.saturating_sub(available);
-
-        let label = format!(
-            "{} ({}) - Used: {} / Total: {} (Available: {})",
-            disk.mount_point().display(),
-            disk.name().to_string_lossy(),
-            humansize::format_size(used, DECIMAL),
-            humansize::format_size(total, DECIMAL),
-            humansize::format_size(available, DECIMAL)
-        );
-
-        Self {
-            mount_point: mount_point.to_path_buf(),
-            label,
-        }
-    }
 }
 
 impl SelectTarget {
@@ -67,11 +28,11 @@ impl SelectTarget {
                 ui.label("Available Disks/Mounts:");
 
                 ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
-                    if self.disks.is_empty() {
+                    if self.storage_manager.is_empty() {
                         ui.label("(No disks found by sysinfo)");
                     } else {
-                        self.disks.iter().for_each(|disk| {
-                            if ui.button(&disk.label).clicked() {
+                        self.storage_manager.iter().for_each(|disk| {
+                            if StorageWidget::new(disk).ui(ui).clicked() {
                                 selected_path = Some(disk.mount_point.to_owned());
                             }
                         });
@@ -90,9 +51,7 @@ impl SelectTarget {
                 }
 
                 if ui.button("Select Folder...").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                        selected_path = Some(path);
-                    }
+                    selected_path = rfd::FileDialog::new().pick_folder();
                 }
 
                 if let Some(path) = &selected_path {
@@ -103,5 +62,63 @@ impl SelectTarget {
                 selected_path
             })
             .inner
+    }
+}
+
+struct StorageWidget<'a> {
+    storage: &'a Storage,
+}
+
+impl<'a> StorageWidget<'a> {
+    fn new(storage: &'a Storage) -> Self {
+        Self { storage }
+    }
+}
+
+const HEIGHT: f32 = 48.0;
+const PROGRESS_WIDTH: f32 = 100.0;
+
+impl Widget for StorageWidget<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let response = ui
+            .scope_builder(
+                UiBuilder::new()
+                    .id_salt(&self.storage.mount_point)
+                    .sense(Sense::click()),
+                |ui| {
+                    let response = ui.response();
+                    let visuals = ui.style().interact(&response);
+                    let text_color = visuals.text_color();
+
+                    Frame::canvas(ui.style())
+                        .fill(visuals.bg_fill.gamma_multiply(0.3))
+                        .stroke(visuals.fg_stroke)
+                        .inner_margin(ui.spacing().menu_margin)
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Image::new(self.storage.icon())
+                                        .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
+                                );
+                                ui.label(&self.storage.name)
+                                    .on_hover_cursor(CursorIcon::Default);
+                                // ui.add_space(ui.available_width() - PROGRESS_WIDTH);
+                                // ui.add(
+                                //     ProgressBar::new(self.storage.progress())
+                                //         .desired_width(PROGRESS_WIDTH)
+                                //         .desired_height(36.0)
+                                //         .show_percentage(),
+                                // );
+                            });
+                        });
+                },
+            )
+            .response;
+        if response.hovered() {
+            egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
+                ui.label("Helpful text");
+            });
+        }
+        response
     }
 }
