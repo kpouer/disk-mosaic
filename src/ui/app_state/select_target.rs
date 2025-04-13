@@ -52,11 +52,6 @@ impl SelectTarget {
                     selected_path = rfd::FileDialog::new().pick_folder();
                 }
 
-                if let Some(path) = &selected_path {
-                    ui.separator();
-                    ui.label(format!("Selected: {}", path.display()));
-                }
-
                 selected_path
             })
             .inner
