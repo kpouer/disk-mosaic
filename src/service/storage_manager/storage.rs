@@ -6,8 +6,8 @@ use sysinfo::{Disk, DiskKind};
 pub struct Storage {
     pub(crate) mount_point: PathBuf,
     pub(crate) name: String,
-    available: u64,
-    total: u64,
+    pub(crate) available: u64,
+    pub(crate) total: u64,
     removable: bool,
     kind: DiskKind,
 }

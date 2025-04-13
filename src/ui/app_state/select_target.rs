@@ -1,11 +1,9 @@
 use crate::service::storage_manager::StorageManager;
 use crate::service::storage_manager::storage::Storage;
 use crate::ui::about_dialog::AboutDialog;
-use egui::{
-    Button, Context, CursorIcon, Frame, Label, ProgressBar, Rect, Response, RichText, ScrollArea,
-    Sense, Ui, UiBuilder, Vec2, Widget,
-};
+use egui::{Button, Context, Response, ScrollArea, Ui, Vec2, Widget};
 use home::home_dir;
+use humansize::DECIMAL;
 use std::path::PathBuf;
 
 #[derive(Debug, Default)]
@@ -76,47 +74,26 @@ impl<'a> StorageWidget<'a> {
 }
 
 const HEIGHT: f32 = 48.0;
-const PROGRESS_WIDTH: f32 = 100.0;
 
 impl Widget for StorageWidget<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let response = ui
-            .scope_builder(
-                UiBuilder::new()
-                    .id_salt(&self.storage.mount_point)
-                    .sense(Sense::click()),
-                |ui| {
-                    let response = ui.response();
-                    let visuals = ui.style().interact(&response);
-                    let text_color = visuals.text_color();
-
-                    Frame::canvas(ui.style())
-                        .fill(visuals.bg_fill.gamma_multiply(0.3))
-                        .stroke(visuals.fg_stroke)
-                        .inner_margin(ui.spacing().menu_margin)
-                        .show(ui, |ui| {
-                            ui.horizontal(|ui| {
-                                ui.add(
-                                    egui::Image::new(self.storage.icon())
-                                        .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
-                                );
-                                ui.label(&self.storage.name)
-                                    .on_hover_cursor(CursorIcon::Default);
-                                // ui.add_space(ui.available_width() - PROGRESS_WIDTH);
-                                // ui.add(
-                                //     ProgressBar::new(self.storage.progress())
-                                //         .desired_width(PROGRESS_WIDTH)
-                                //         .desired_height(36.0)
-                                //         .show_percentage(),
-                                // );
-                            });
-                        });
-                },
-            )
-            .response;
+        let image =
+            egui::Image::new(self.storage.icon()).fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
+        let button = Button::image_and_text(image, &self.storage.name);
+        let response = ui.add(button);
         if response.hovered() {
             egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
-                ui.label("Helpful text");
+                ui.heading(&self.storage.name);
+                ui.separator();
+                ui.label(format!(
+                    "Mount: {}",
+                    self.storage.mount_point.to_string_lossy()
+                ));
+                ui.label(format!(
+                    "{} / {}",
+                    humansize::format_size(self.storage.total - self.storage.available, DECIMAL),
+                    humansize::format_size(self.storage.total, DECIMAL)
+                ));
             });
         }
         response
