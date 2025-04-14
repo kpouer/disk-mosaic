@@ -8,7 +8,7 @@ pub struct Storage {
     pub(crate) name: String,
     pub(crate) available: u64,
     pub(crate) total: u64,
-    removable: bool,
+    pub(crate) removable: bool,
     kind: DiskKind,
 }
 

@@ -99,6 +99,9 @@ impl Widget for StorageWidget<'_> {
                     humansize::format_size(self.storage.total - self.storage.available, DECIMAL),
                     humansize::format_size(self.storage.total, DECIMAL)
                 ));
+                if self.storage.removable {
+                    ui.label("Removable");
+                }
             });
         }
         response
