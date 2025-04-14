@@ -14,17 +14,15 @@ pub(crate) struct SelectTarget {
 
 impl SelectTarget {
     pub fn show(&mut self, ctx: &Context) -> Option<PathBuf> {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Select Scan Target");
+                AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
+            });
+        });
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 let mut selected_path = None;
-                ui.horizontal(|ui| {
-                    ui.heading("Select Scan Target");
-                    AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
-                });
-                ui.separator();
-
-                ui.label("Available Disks/Mounts:");
-
                 ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
                     if self.storage_manager.is_empty() {
                         ui.label("(No disks found by sysinfo)");
@@ -39,16 +37,27 @@ impl SelectTarget {
 
                 ui.separator();
 
-                if ui.button("Home Folder").clicked() {
+                if ui
+                    .add_sized(
+                        Vec2::new(ui.available_width(), HEIGHT),
+                        Button::new("Home Folder"),
+                    )
+                    .clicked()
+                {
                     if let Some(path) = home_dir() {
                         selected_path = Some(path);
                     } else {
-                        // Optional: Log or display an error if home dir not found
                         log::error!("Could not determine home directory.");
                     }
                 }
 
-                if ui.button("Select Folder...").clicked() {
+                if ui
+                    .add_sized(
+                        Vec2::new(ui.available_width(), HEIGHT),
+                        Button::new("Select Folder..."),
+                    )
+                    .clicked()
+                {
                     selected_path = rfd::FileDialog::new().pick_folder();
                 }
 
@@ -75,7 +84,7 @@ impl Widget for StorageWidget<'_> {
         let image =
             egui::Image::new(self.storage.icon()).fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
         let button = Button::image_and_text(image, &self.storage.name);
-        let response = ui.add(button);
+        let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
         if response.hovered() {
             egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
                 ui.heading(&self.storage.name);
