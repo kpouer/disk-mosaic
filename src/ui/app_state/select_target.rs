@@ -81,8 +81,9 @@ const HEIGHT: f32 = 48.0;
 
 impl Widget for StorageWidget<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let image =
-            egui::Image::new(self.storage.icon()).fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
+        let image = egui::Image::new(self.storage.icon())
+            .tint(ui.style().visuals.widgets.noninteractive.text_color())
+            .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
         let button = Button::image_and_text(image, &self.storage.name);
         let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
         if response.hovered() {
