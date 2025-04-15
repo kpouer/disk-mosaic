@@ -16,3 +16,4 @@ rayon = "1.10.0"
 egui_solarized = { path = "../egui-solarized" }
 sysinfo = "0.34.1"
 rfd = "0.15.3"
+unicode-normalization = "0.1.24"

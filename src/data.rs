@@ -3,6 +3,7 @@ use log::{error, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
+use unicode_normalization::UnicodeNormalization;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Data {
@@ -64,11 +65,10 @@ impl Data {
     }
 
     fn get_file_name(path: &Path) -> String {
-        let name = path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_else(|| "?".to_string());
-        name
+        path.file_name()
+            .and_then(|f| f.to_str())
+            .map(|f| f.nfc().collect::<String>())
+            .unwrap_or_default()
     }
 
     pub(crate) fn next_color() -> Color32 {

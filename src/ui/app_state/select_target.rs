@@ -84,11 +84,11 @@ impl Widget for StorageWidget<'_> {
         let image = egui::Image::new(self.storage.icon())
             .tint(ui.style().visuals.widgets.noninteractive.text_color())
             .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
-        let button = Button::image_and_text(image, &self.storage.name);
+        let button = Button::image_and_text(image, self.storage.name());
         let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
         if response.hovered() {
             egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
-                ui.heading(&self.storage.name);
+                ui.heading(self.storage.name());
                 ui.separator();
                 ui.label(format!(
                     "Mount: {}",
