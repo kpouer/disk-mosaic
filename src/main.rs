@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 mod analysis_result;
 mod data;
 mod disk_analyzer;
