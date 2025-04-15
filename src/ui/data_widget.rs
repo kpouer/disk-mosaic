@@ -44,6 +44,16 @@ impl Widget for DataWidget<'_> {
             egui::StrokeKind::Inside,
         );
         self.draw_label(ui, rect, zoomed);
+        if response.hovered() {
+            egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
+                ui.heading(&self.data.name);
+                ui.separator();
+                ui.label(format!(
+                    "Size: {}",
+                    humansize::format_size(self.data.size() as u64, DECIMAL)
+                ));
+            });
+        }
         response
     }
 }
