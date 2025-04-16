@@ -43,37 +43,39 @@ impl Widget for DataWidget<'_> {
             egui::Stroke::new(1.0, Color32::BLACK),
             egui::StrokeKind::Inside,
         );
-        self.draw_label(ui, rect, zoomed);
-        if response.hovered() {
-            egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
-                ui.heading(&self.data.name);
-                ui.separator();
-                ui.label(format!(
-                    "Size: {}",
-                    humansize::format_size(self.data.size() as u64, DECIMAL)
-                ));
-            });
+        if zoomed {
+            rect = rect.shrink(HOVER_ZOOMING);
         }
+        DataLabel::new(self.data, rect).ui(ui);
         response
     }
 }
 
-impl DataWidget<'_> {
-    fn draw_label(&self, ui: &mut Ui, mut rect: Rect, zoomed: bool) {
-        if zoomed {
-            rect = rect.shrink(HOVER_ZOOMING);
-        }
+#[derive(Debug)]
+struct DataLabel<'a> {
+    data: &'a Data,
+    rect: Rect,
+}
 
+impl<'a> DataLabel<'a> {
+    fn new(data: &'a Data, rect: Rect) -> Self {
+        Self { data, rect }
+    }
+}
+
+impl Widget for DataLabel<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let Self { data, rect } = self;
         if rect.size().x < FONT_SIZE + 2.0 * ui.spacing().item_spacing.x
             || rect.size().y < FONT_SIZE + 2.0 * ui.spacing().item_spacing.y
         {
-            return;
+            return ui.response();
         }
 
         let clip = ui.clip_rect();
         ui.set_clip_rect(rect);
 
-        Image::from(self.data.kind.get_image()).paint_at(
+        Image::from(data.kind.get_image()).paint_at(
             ui,
             Rect::from_min_size(
                 rect.min + ui.spacing().item_spacing,
@@ -81,7 +83,7 @@ impl DataWidget<'_> {
             ),
         );
 
-        let name = self.data.name();
+        let name = data.name();
         if !name.is_empty() {
             let galley_name = ui.painter().layout(
                 name.into(),
@@ -101,10 +103,11 @@ impl DataWidget<'_> {
                     ),
                     egui::Label::new(galley_name),
                 );
-                DataSize::new(self.data, rect).ui(ui);
+                DataSize::new(data, rect).ui(ui);
             }
         }
         ui.set_clip_rect(clip);
+        ui.response()
     }
 }
 
@@ -122,22 +125,23 @@ impl<'a> DataSize<'a> {
 
 impl Widget for DataSize<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
+        let Self { data, rect } = self;
         let galley_size = ui.painter().layout(
-            humansize::format_size(self.data.size() as u64, DECIMAL),
+            humansize::format_size(data.size() as u64, DECIMAL),
             FONT,
             LABEL_COLOR,
             ui.available_width(),
         );
-        if galley_size.rect.width() < self.rect.width()
-            || self.rect.height() < FONT_SIZE * 2.0 + ui.spacing().item_spacing.y * 3.0
+        if galley_size.rect.width() < rect.width()
+            || rect.height() < FONT_SIZE * 2.0 + ui.spacing().item_spacing.y * 3.0
         {
             ui.put(
                 Rect::from_min_max(
                     Pos2::new(
-                        self.rect.min.x + ui.spacing().item_spacing.x,
-                        self.rect.max.y - galley_size.rect.height() - ui.spacing().item_spacing.y,
+                        rect.min.x + ui.spacing().item_spacing.x,
+                        rect.max.y - galley_size.rect.height() - ui.spacing().item_spacing.y,
                     ),
-                    Pos2::new(self.rect.min.x + galley_size.rect.width(), self.rect.min.y),
+                    Pos2::new(rect.min.x + galley_size.rect.width(), rect.min.y),
                 ),
                 egui::Label::new(galley_size),
             )

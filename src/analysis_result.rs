@@ -1,14 +1,19 @@
 use crate::data::{Data, Kind};
 use log::info;
+use std::path::PathBuf;
 
 #[derive(Debug, Default)]
 pub(crate) struct AnalysisResult {
+    pub(crate) root_path: PathBuf,
     pub(crate) data_stack: Vec<Data>,
 }
 
 impl AnalysisResult {
-    pub(crate) fn new(data_stack: Vec<Data>) -> AnalysisResult {
-        Self { data_stack }
+    pub(crate) fn new(root_path: PathBuf, data_stack: Vec<Data>) -> AnalysisResult {
+        Self {
+            data_stack,
+            root_path,
+        }
     }
 
     pub(crate) fn selected_index(&mut self, index: usize) {

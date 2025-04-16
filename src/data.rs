@@ -8,6 +8,7 @@ use unicode_normalization::UnicodeNormalization;
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Data {
     pub(crate) depth: u16,
+    /// The name of the file or directory
     pub name: String,
     pub size: u64,
     pub bounds: treemap::Rect,

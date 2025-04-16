@@ -84,8 +84,9 @@ impl Analyzer {
             Task::scan_directory_channel(&root_copy, &tx, &stopper_copy);
             info!("Done in {}ms", start.elapsed().as_millis());
         });
+        let root_data = Data::new_directory(&root);
         Self {
-            analysis_result: AnalysisResult::new(vec![Data::new_directory(&root)]),
+            analysis_result: AnalysisResult::new(root, vec![root_data]),
             rx,
             stopper,
             handle,
