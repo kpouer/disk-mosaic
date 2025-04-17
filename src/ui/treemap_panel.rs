@@ -1,7 +1,7 @@
 use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::ui::data_widget::DataWidget;
-use egui::{Ui, Widget};
+use egui::{Label, TextWrapMode, Ui, Widget};
 use humansize::DECIMAL;
 use treemap::{Mappable, TreemapLayout};
 
@@ -51,10 +51,13 @@ impl<'a> TreeMapPanel<'a> {
                                     |ui| {
                                         ui.heading(&data.name);
                                         ui.separator();
-                                        ui.label(format!(
-                                            "Size: {}",
-                                            humansize::format_size(data.size() as u64, DECIMAL)
-                                        ));
+                                        ui.add(
+                                            Label::new(format!(
+                                                "Size: {}",
+                                                humansize::format_size(data.size() as u64, DECIMAL)
+                                            ))
+                                            .wrap_mode(TextWrapMode::Extend),
+                                        );
                                     },
                                 );
                             }
