@@ -36,13 +36,14 @@ impl<'a> TreeMapPanel<'a> {
                     .filter(|(_, data)| data.bounds.w > 0.0 && data.bounds.h > 0.0)
                     .for_each(|(index, data)| {
                         let mut show_context_menu = false;
-                        let response = DataWidget::new(data).ui(ui);
+                        let mut data_widget = DataWidget::new(data);
+                        let response = data_widget.ui(ui);
                         if !response.context_menu_opened() {
                             if response.double_clicked() && matches!(data.kind, Kind::Dir(_)) {
                                 clicked_data_index = Some(index);
                             } else if response.secondary_clicked() {
                                 show_context_menu = true;
-                            } else if response.hovered() {
+                            } else if response.hovered() && data_widget.need_tooltip {
                                 egui::show_tooltip(
                                     ui.ctx(),
                                     ui.layer_id(),
