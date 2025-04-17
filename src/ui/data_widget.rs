@@ -46,6 +46,9 @@ impl<'a> DataWidget<'a> {
                 ui.available_width() - ui.spacing().item_spacing.x * 2.0,
             );
             if galley_name.rect.width() < rect.width() {
+                let name_bottom =
+                    rect.min.y + ui.spacing().item_spacing.y + galley_name.rect.height();
+
                 ui.put(
                     Rect::from_min_size(
                         rect.min
@@ -57,22 +60,23 @@ impl<'a> DataWidget<'a> {
                     ),
                     egui::Label::new(galley_name),
                 );
-                self.show_size(ui, rect);
+                self.show_size(ui, rect, name_bottom);
             }
         }
         ui.set_clip_rect(clip);
     }
 
-    fn show_size(&mut self, ui: &mut Ui, rect: Rect) {
+    fn show_size(&mut self, ui: &mut Ui, rect: Rect, name_bottom: f32) {
         let galley_size = ui.painter().layout(
             humansize::format_size(self.data.size() as u64, DECIMAL),
             FONT,
             LABEL_COLOR,
             ui.available_width(),
         );
-        if galley_size.rect.width() < rect.width()
-            || rect.height() < FONT_SIZE * 2.0 + ui.spacing().item_spacing.y * 3.0
-        {
+
+        let size_top = rect.max.y - galley_size.rect.height() - ui.spacing().item_spacing.y;
+
+        if galley_size.rect.width() < rect.width() && size_top > name_bottom {
             ui.put(
                 Rect::from_min_max(
                     Pos2::new(
