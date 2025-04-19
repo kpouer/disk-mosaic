@@ -1,4 +1,5 @@
 use crate::data::{Data, Kind};
+use crate::settings::Settings;
 use crate::ui::app_state::analyzer::{Message, ScanResult};
 use log::{debug, info, warn};
 use rayon::prelude::*;
@@ -14,6 +15,7 @@ pub struct Task<'a> {
     tx: &'a Sender<Message>,
     stopper: &'a Arc<AtomicBool>,
     sender: Sender<Message>,
+    settings: &'a Arc<Mutex<Settings>>,
 }
 
 const BIG_FILE_THRESHOLD: u64 = 10000000;
@@ -24,12 +26,14 @@ impl<'a> Task<'a> {
         tx: &'a Sender<Message>,
         stopper: &'a Arc<AtomicBool>,
         sender: Sender<Message>,
+        settings: &'a Arc<Mutex<Settings>>,
     ) -> Self {
         Self {
             path,
             tx,
             stopper,
             sender,
+            settings,
         }
     }
 
@@ -39,11 +43,12 @@ impl<'a> Task<'a> {
             tx,
             stopper,
             sender,
+            settings,
         } = self;
 
         let mut data = Data::new_directory(&path);
 
-        match Self::scan_directory_recursive(&path, stopper, &sender) {
+        match Self::scan_directory_recursive(&path, stopper, &sender, settings) {
             Ok(children) => {
                 data.set_nodes(children);
             }
@@ -61,6 +66,7 @@ impl<'a> Task<'a> {
         path: &Path,
         stopper: &Arc<AtomicBool>,
         sender: &Sender<Message>,
+        settings: &Arc<Mutex<Settings>>,
     ) -> Result<Vec<Data>, Error> {
         sender
             .send(Message::DirectoryScanStart(
@@ -109,7 +115,14 @@ impl<'a> Task<'a> {
                     }
                 };
                 if metadata.is_dir() {
-                    match Self::scan_directory_recursive(&entry_path, stopper, sender) {
+                    {
+                        let settings = settings.lock().unwrap();
+                        if settings.is_path_ignored(&entry_path) {
+                            info!("Ignoring path: {:?}", entry_path);
+                            return None;
+                        }
+                    }
+                    match Self::scan_directory_recursive(&entry_path, stopper, sender, settings) {
                         Ok(grandchildren) => {
                             let mut dir_data = Data::new_directory(&entry_path);
                             dir_data.set_nodes(grandchildren);
@@ -169,6 +182,7 @@ impl<'a> Task<'a> {
         path: &Path,
         sender: &Sender<Message>,
         stopper: &Arc<AtomicBool>,
+        settings: Arc<Mutex<Settings>>,
     ) {
         sender
             .send(Message::DirectoryScanStart(
@@ -185,7 +199,14 @@ impl<'a> Task<'a> {
                         return;
                     }
                     if path.is_dir() {
-                        Task::new(path, sender, stopper, sender.clone()).run();
+                        {
+                            let settings = settings.lock().unwrap();
+                            if settings.is_path_ignored(&path) {
+                                info!("Ignoring path: {:?}", path);
+                                return;
+                            }
+                        }
+                        Task::new(path, sender, stopper, sender.clone(), &settings).run();
                     } else if path.is_file() {
                         let size = Data::get_file_size(&path);
                         scan_result.add_size(size);

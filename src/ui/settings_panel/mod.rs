@@ -63,7 +63,7 @@ impl<'a> SettingsDialog<'a> {
                     }
                 });
                 ui.separator();
-                SearchFolderPanel::new(
+                let modified = SearchFolderPanel::new(
                     "ignored_folders",
                     "Ignored Folders",
                     HashListPanel::new(
@@ -72,6 +72,9 @@ impl<'a> SettingsDialog<'a> {
                     ),
                 )
                 .show(ui);
+                if modified {
+                    settings.dirty = true;
+                }
             });
     }
 }

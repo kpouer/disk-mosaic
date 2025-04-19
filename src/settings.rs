@@ -8,7 +8,7 @@ use std::path::PathBuf;
 pub(crate) struct Settings {
     #[serde(skip)]
     /// Mark the Settings as dirty (need to be saved)
-    dirty: bool,
+    pub(crate) dirty: bool,
     theme: ThemePreference,
     /// List of paths to ignore (might be cloud drives, etc.
     ignored_path: Vec<PathBuf>,
@@ -42,7 +42,9 @@ impl Settings {
     }
 
     pub(crate) fn add_ignored_path(&mut self, path: PathBuf) {
+        info!("add ignored path: {:?}", path);
         self.ignored_path.push(path);
+        self.dirty = true;
     }
 
     pub(crate) fn is_path_ignored(&self, path: &PathBuf) -> bool {
@@ -68,7 +70,7 @@ impl Settings {
 
     fn settings_folder() -> Option<PathBuf> {
         home::home_dir().map(|mut home| {
-            home.push(".disk-analyzer");
+            home.push(".disk-mosaic");
             home
         })
     }

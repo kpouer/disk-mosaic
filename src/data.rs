@@ -1,9 +1,9 @@
+use crate::util::PathBufToString;
 use egui::{Color32, ImageSource, include_image};
 use log::{error, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use treemap::{Mappable, Rect};
-use unicode_normalization::UnicodeNormalization;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Data {
@@ -44,7 +44,7 @@ static INDEX: AtomicUsize = AtomicUsize::new(0);
 impl Data {
     pub fn new_directory(path: &Path) -> Self {
         Self {
-            name: Self::get_file_name(path),
+            name: path.name().unwrap_or_default(),
             kind: Default::default(),
             color: Self::next_color(),
             ..Default::default()
@@ -53,7 +53,7 @@ impl Data {
 
     pub fn new_file(path: &Path, size: u64) -> Self {
         Self {
-            name: Self::get_file_name(path),
+            name: path.name().unwrap_or_default(),
             kind: Kind::File,
             size,
             color: Self::next_color(),
@@ -63,13 +63,6 @@ impl Data {
 
     pub fn get_file_size(path: &Path) -> u64 {
         path.metadata().map(|metadata| metadata.len()).unwrap_or(0)
-    }
-
-    fn get_file_name(path: &Path) -> String {
-        path.file_name()
-            .and_then(|f| f.to_str())
-            .map(|f| f.nfc().collect::<String>())
-            .unwrap_or_default()
     }
 
     pub(crate) fn next_color() -> Color32 {

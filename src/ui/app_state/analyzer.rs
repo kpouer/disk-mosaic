@@ -82,9 +82,10 @@ impl Analyzer {
         let stopper = Arc::new(AtomicBool::new(false));
         let root_copy = root.clone();
         let stopper_copy = stopper.clone();
+        let settings_copy = Arc::clone(&settings);
         let handle = thread::spawn(move || {
             let start = std::time::Instant::now();
-            Task::scan_directory_channel(&root_copy, &tx, &stopper_copy);
+            Task::scan_directory_channel(&root_copy, &tx, &stopper_copy, settings_copy);
             info!("Done in {}ms", start.elapsed().as_millis());
         });
         let root_data = Data::new_directory(&root);

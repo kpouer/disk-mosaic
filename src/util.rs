@@ -14,11 +14,42 @@ impl PathBufToString for Path {
     }
 
     fn absolute_path(&self) -> Option<String> {
-        let mut absolute_path = String::with_capacity(100);
-        for ancestor in self.ancestors() {
-            absolute_path.push('/');
-            absolute_path.push_str(&ancestor.name().unwrap_or_default());
-        }
-        Some(absolute_path)
+        Some(self.as_os_str().to_str()?.nfc().collect::<String>())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_name() {
+        let path = PathBuf::from("test.txt");
+        assert_eq!(path.name(), Some("test.txt".nfc().collect()));
+    }
+
+    #[test]
+    fn test_absolute_path() {
+        let path = PathBuf::from("/home/user/test.txt");
+        assert_eq!(
+            path.absolute_path(),
+            Some("/home/user/test.txt".nfc().collect())
+        );
+    }
+
+    #[test]
+    fn test_name_with_unicode() {
+        let path = PathBuf::from("tést.txt");
+        assert_eq!(path.name(), Some("tést.txt".nfc().collect()));
+    }
+
+    #[test]
+    fn test_absolute_path_with_unicode() {
+        let path = PathBuf::from("/home/user/tést.txt");
+        assert_eq!(
+            path.absolute_path(),
+            Some("/home/user/tést.txt".nfc().collect())
+        );
     }
 }
