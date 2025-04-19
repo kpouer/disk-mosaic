@@ -1,149 +1,146 @@
 name: Release
 on:
   push:
-    branches: [main]
     tags:
       - "v*.*.*"
-    paths:
-      - ".github/workflows/release.yml"
-      - ".goreleaser.yaml"
-  schedule:
-    - cron: "0 0 * * *"
   workflow_dispatch:
-concurrency:
-  group: release-${{ github.event_name }}-${{ github.ref_name }}
-  cancel-in-progress: true
+
 jobs:
   build:
+    name: Build ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
-      discussions: write
     strategy:
+      fail-fast: false
       matrix:
         include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: disk-mosaic
+            asset_name: disk-mosaic-linux-amd64
+            friendly_name: disk-mosaic
           - os: macos-latest
-            cache-subdir: darwin
-          - os: ubuntu-22.04
-            cache-subdir: linux
-            _ids: --id linux-x64-wayland --id linux-x64-x11
-          - os: ubuntu-22.04-arm
-            cache-subdir: linux
-            _ids: --id linux-arm64-wayland --id linux-arm64-x11
+            target: x86_64-apple-darwin
+            artifact_name: disk-mosaic
+            asset_name: disk-mosaic-macos-amd64
+            friendly_name: disk-mosaic
           - os: windows-latest
-            cache-subdir: windows
-      fail-fast: false
-    outputs:
-      cache-hit: ${{ steps.cache-check.outputs.cache-hit }}
-    env:
-      GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-      MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-      MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-      MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-      MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-      MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-      MACOS_NOTARY_KEYCHAIN_PROFILE: ${{ secrets.MACOS_NOTARY_KEYCHAIN_PROFILE }}
+            target: x86_64-pc-windows-msvc
+            artifact_name: disk-mosaic.exe
+            asset_name: disk-mosaic-windows-amd64.exe
+            friendly_name: disk-mosaic.exe
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
         with:
-          fetch-depth: 0
-      - uses: actions/cache@v4
-        with:
-          path: dist/${{ matrix.cache-subdir }}
-          key: goreleaser-${{ matrix.os }}-${{ github.sha }}
-          enableCrossOsArchive: ${{ matrix.os == 'windows-latest' }}
-          lookup-only: true
-          fail-on-cache-miss: false
-        id: cache-check
-      - if: matrix.os == 'macos-latest'
-        run: rustup target add x86_64-apple-darwin
-      - if: matrix.os == 'windows-latest'
-        run: rustup target add aarch64-pc-windows-msvc
-      - if: matrix.os == 'macos-latest'
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+          profile: minimal
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          # create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/goreleaser.p12
-          KEY_PATH=$RUNNER_TEMP/goreleaser.p8
-          KEYCHAIN_PATH=$RUNNER_TEMP/goreleaser.keychain-db
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev
 
-          # import certificate and key from secrets
-          echo -n "$MACOS_SIGN_P12" | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$MACOS_NOTARY_KEY" | base64 --decode -o $KEY_PATH
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install cmake
 
-          # create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          vcpkg integrate install
 
-          # import certificate to keychain
-          security import $CERTIFICATE_PATH -P "$MACOS_SIGN_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
-          # create notary profile
-          xcrun notarytool store-credentials "$MACOS_NOTARY_KEYCHAIN_PROFILE" \
-            --key "$KEY_PATH" \
-            --key-id "$MACOS_NOTARY_KEY_ID" \
-            --issuer "$MACOS_NOTARY_ISSUER_ID" \
-            --keychain $KEYCHAIN_PATH
-
-          # export the keychain path
-          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >>$GITHUB_ENV
-
-      - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.cache-check.outputs.cache-hit != 'true'
-        uses: goreleaser/goreleaser-action@v6.3.0
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
         with:
-          distribution: goreleaser-pro
-          version: nightly
-          args: release --clean --split ${{ matrix._ids }}
-      - if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v'))) && steps.cache-check.outputs.cache-hit != 'true'
-        uses: goreleaser/goreleaser-action@v6.3.0
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build release binary
+        uses: actions-rs/cargo@v1
         with:
-          distribution: goreleaser-pro
-          version: nightly
-          args: release --clean --split ${{ matrix._ids }} --nightly --skip=winget
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p release/disk-mosaic
+          # Copy binary and rename to friendly name
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/disk-mosaic/${{ matrix.friendly_name }}
+          # Copy assets
+          cp -r assets release/disk-mosaic/
+          # Copy license and readme
+          cp LICENSE release/disk-mosaic/ || cp LICENCE release/disk-mosaic/ || echo "No license file found"
+          cp README.md release/disk-mosaic/ || echo "No README.md file found"
+
+          # Create archive based on OS
+          cd release
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a -tzip disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.zip disk-mosaic
+          else
+            tar -czf disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.tar.gz disk-mosaic
+          fi
+          cd ..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}
+          path: release/disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.*
+
   release:
-    # skip if cache exists for same commit, since we probably already released
-    if: needs.build.outputs.cache-hit != 'true'
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
-      - uses: actions/cache@v4
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
         with:
-          key: goreleaser-macos-latest-${{ github.sha }}
-          path: dist/darwin
-          fail-on-cache-miss: true
-      - uses: actions/cache@v4
-        with:
-          key: goreleaser-windows-latest-${{ github.sha }}
-          path: dist/windows
-          fail-on-cache-miss: true
-      - uses: actions/cache@v4
-        with:
-          key: goreleaser-ubuntu-22.04-arm-${{ github.sha }}
-          path: dist/linux
-          fail-on-cache-miss: true
-      - name: workaround to avoid conflicts b/w linux x64/arm64 caches
-        run: |
-          # rename linux to linux-arm64, to avoid cache restore conflicts
-          mv dist/linux dist/linux-arm64
-          # update paths in artifacts.json (dist/linux -> dist/linux-arm64)
-          sed -i 's/dist\/linux/dist\/linux-arm64/g' dist/linux-arm64/artifacts.json
-      - uses: actions/cache@v4
-        with:
-          key: goreleaser-ubuntu-22.04-${{ github.sha }}
-          path: dist/linux
-          fail-on-cache-miss: true
-      - uses: goreleaser/goreleaser-action@v6.3.0
-        with:
-          distribution: goreleaser-pro
-          version: nightly
-          args: continue --merge
+          files: |
+            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz
+            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.tar.gz
+            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip
+          name: Disk Mosaic ${{ github.ref_name }}
+          body: |
+            # Disk Mosaic ${{ github.ref_name }}
+
+            Disk Mosaic is a utility tool that helps you visually identify how your disk space is used and where.
+
+            ## Downloads
+            - [Linux](disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz)
+            - [macOS](disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.tar.gz)
+            - [Windows](disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip)
+          draft: false
+          prerelease: false
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
