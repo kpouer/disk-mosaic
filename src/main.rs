@@ -3,9 +3,11 @@ mod analysis_result;
 mod data;
 mod disk_analyzer;
 mod service;
+mod settings;
 mod task;
 mod ui;
 
+use crate::settings::Settings;
 use disk_analyzer::DiskAnalyzerApp;
 use egui_extras::install_image_loaders;
 
@@ -18,7 +20,9 @@ fn main() -> eframe::Result {
         Box::new(|ctx| {
             install_image_loaders(&ctx.egui_ctx);
             egui_solarized::install(&ctx.egui_ctx);
-            Ok(Box::new(DiskAnalyzerApp::default()))
+            let settings = Settings::default();
+            settings.init(&ctx.egui_ctx);
+            Ok(Box::new(DiskAnalyzerApp::new(settings)))
         }),
     )
 }

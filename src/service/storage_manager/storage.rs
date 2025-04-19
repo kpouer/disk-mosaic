@@ -27,12 +27,6 @@ impl From<&Disk> for Storage {
 }
 
 impl Storage {
-    pub(crate) fn progress(&self) -> f32 {
-        let total = self.total;
-        let used = total - self.available;
-        used as f32 / total as f32
-    }
-
     pub(crate) fn icon(&self) -> ImageSource {
         match self.kind {
             DiskKind::HDD => include_image!("../../../assets/hdd.svg"),

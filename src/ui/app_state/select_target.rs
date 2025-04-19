@@ -1,23 +1,41 @@
 use crate::service::storage_manager::StorageManager;
 use crate::service::storage_manager::storage::Storage;
+use crate::settings::Settings;
 use crate::ui::about_dialog::AboutDialog;
+use crate::ui::settings_panel::SettingsDialog;
 use egui::{Button, Context, Response, ScrollArea, Ui, Vec2, Widget};
 use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct SelectTarget {
+    settings: Arc<Mutex<Settings>>,
     storage_manager: StorageManager,
     about_open: bool,
+    settings_open: bool,
 }
 
 impl SelectTarget {
+    pub(crate) fn new(settings: Arc<Mutex<Settings>>) -> Self {
+        Self {
+            settings,
+            storage_manager: Default::default(),
+            about_open: false,
+            settings_open: false,
+        }
+    }
+
     pub fn show(&mut self, ctx: &Context) -> Option<PathBuf> {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.heading("Select Scan Target");
-                AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
+                    SettingsDialog::new(&mut self.settings_open, &self.settings)
+                        .show_button(ctx, ui);
+                });
             });
         });
         egui::CentralPanel::default()

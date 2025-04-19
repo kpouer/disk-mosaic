@@ -1,7 +1,10 @@
+use crate::disk_analyzer::AppState::SelectDisk;
+use crate::settings::Settings;
 use crate::ui::app_state::analyzer::{Analyzer, AnalyzerUpdate}; // Added AnalyzerUpdate
 use crate::ui::app_state::result_view::ResultView;
 use crate::ui::app_state::select_target::SelectTarget;
 use log::info;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 enum AppState {
@@ -10,14 +13,19 @@ enum AppState {
     Analyzed(ResultView),
 }
 
-impl Default for AppState {
-    fn default() -> Self {
-        Self::SelectDisk(SelectTarget::default())
+impl DiskAnalyzerApp {
+    pub(crate) fn new(settings: Settings) -> Self {
+        let settings = Arc::new(Mutex::new(settings));
+        Self {
+            settings: Arc::clone(&settings),
+            state: SelectDisk(SelectTarget::new(settings)),
+        }
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct DiskAnalyzerApp {
+    settings: Arc<Mutex<Settings>>,
     state: AppState,
 }
 
@@ -38,16 +46,23 @@ impl eframe::App for DiskAnalyzerApp {
                 }
                 AnalyzerUpdate::GoBack => {
                     info!("Back requested from Analyzer, transitioning to SelectTarget");
-                    self.state = AppState::SelectDisk(SelectTarget::default());
+                    self.state =
+                        AppState::SelectDisk(SelectTarget::new(Arc::clone(&self.settings)));
                 }
                 AnalyzerUpdate::Running => {}
             },
             AppState::Analyzed(result_view) => {
                 if result_view.show(ctx) {
                     info!("Back requested from ResultView, transitioning to SelectTarget");
-                    self.state = AppState::SelectDisk(SelectTarget::default());
+                    self.state =
+                        AppState::SelectDisk(SelectTarget::new(Arc::clone(&self.settings)));
                 }
             }
+        }
+
+        if ctx.input(|i| i.viewport().close_requested()) {
+            let settings = self.settings.lock().unwrap();
+            settings.save().expect("Unable to save settings");
         }
     }
 }
