@@ -22,9 +22,9 @@ jobs:
             friendly_name: disk-mosaic
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: disk-mosaic
+            artifact_name: disk-mosaic.app # Changed artifact name
             asset_name: disk-mosaic-macos-amd64
-            friendly_name: disk-mosaic
+            friendly_name: Disk Mosaic.app # Changed friendly name
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: disk-mosaic.exe
@@ -43,6 +43,13 @@ jobs:
           override: true
           profile: minimal
 
+      - name: Install cargo-bundle dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install librsvg pango pkg-config
+          # Install cargo-bundle and cargo-bundle-licenses
+          cargo install cargo-bundle cargo-bundle-licenses --locked
+
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
         with:
@@ -54,13 +61,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Build release binary
+      - name: Generate licenses (macOS)
+        if: matrix.os == 'macos-latest'
+        run: cargo bundle-licenses --format yaml --output THIRDPARTY.yml
+
+      - name: Build release binary/bundle
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: ${{ matrix.os == 'macos-latest' && 'bundle' || 'build' }}
           args: --release --target ${{ matrix.target }}
 
-      - name: Prepare artifact
+      - name: Prepare artifact (Linux/Windows)
+        if: matrix.os != 'macos-latest'
         shell: bash
         run: |
           mkdir -p release/disk-mosaic
@@ -81,10 +93,39 @@ jobs:
           fi
           cd ..
 
+      - name: Prepare artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          APP_NAME="${{ matrix.friendly_name }}"
+          APP_DIR="target/${{ matrix.target }}/release/bundle/osx/$APP_NAME"
+          DMG_NAME="disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.dmg"
+          VOL_NAME="Disk Mosaic ${{ github.ref_name }}"
+
+          # Ensure the app directory exists
+          if [ ! -d "$APP_DIR" ]; then
+            echo "Error: App directory not found at $APP_DIR"
+            exit 1
+          fi
+
+          # Create Resources directory if it doesn't exist
+          mkdir -p "$APP_DIR/Contents/Resources"
+
+          # Copy assets, license, readme, and third-party licenses
+          cp -r assets "$APP_DIR/Contents/Resources/"
+          cp LICENSE "$APP_DIR/Contents/Resources/" || cp LICENCE "$APP_DIR/Contents/Resources/" || echo "No license file found"
+          cp README.md "$APP_DIR/Contents/Resources/" || echo "No README.md file found"
+          cp THIRDPARTY.yml "$APP_DIR/Contents/Resources/" || echo "No THIRDPARTY.yml file found"
+
+          # Create DMG
+          mkdir -p release
+          hdiutil create -volname "$VOL_NAME" -srcfolder "$APP_DIR" -ov -format UDZO "release/$DMG_NAME"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}
+          # Adjust path glob to include .dmg, .zip, .tar.gz
           path: release/disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.*
 
   release:
@@ -111,7 +152,7 @@ jobs:
         with:
           files: |
             artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz
-            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.tar.gz
+            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.dmg
             artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip
           name: Disk Mosaic ${{ github.ref_name }}
           body: |
@@ -120,9 +161,9 @@ jobs:
             Disk Mosaic is a utility tool that helps you visually identify how your disk space is used and where.
 
             ## Downloads
-            - [Linux](disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz)
-            - [macOS](disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.tar.gz)
-            - [Windows](disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip)
+            - [Linux (tar.gz)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz)
+            - [macOS (dmg)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.dmg)
+            - [Windows (zip)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip)
           draft: false
           prerelease: false
         env:
