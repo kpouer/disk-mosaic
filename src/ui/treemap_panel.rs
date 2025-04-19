@@ -1,0 +1,110 @@
+use crate::analysis_result::AnalysisResult;
+use crate::data::Kind;
+use crate::settings::Settings;
+use crate::ui::data_widget::DataWidget;
+use egui::{Label, TextWrapMode, Ui, Widget};
+use humansize::DECIMAL;
+use log::error;
+use std::sync::{Arc, Mutex};
+use treemap::{Mappable, TreemapLayout};
+
+pub(crate) struct TreeMapPanel<'a> {
+    analysis_result: &'a mut AnalysisResult,
+    settings: &'a Arc<Mutex<Settings>>,
+}
+
+impl<'a> TreeMapPanel<'a> {
+    pub(crate) fn new(
+        analysis_result: &'a mut AnalysisResult,
+        settings: &'a Arc<Mutex<Settings>>,
+    ) -> Self {
+        TreeMapPanel {
+            analysis_result,
+            settings,
+        }
+    }
+
+    pub(crate) fn show(&mut self, ui: &mut Ui) {
+        let clip_rect = ui.clip_rect();
+        let rect = treemap::Rect::from_points(
+            clip_rect.left() as f64,
+            clip_rect.top() as f64,
+            clip_rect.width() as f64,
+            clip_rect.height() as f64,
+        );
+        let mut clicked_data_index = None;
+        let mut full_path = self.analysis_result.root_path.clone();
+        for item in self.analysis_result.data_stack[1..].iter() {
+            full_path.push(&item.name);
+        }
+        if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
+            if let Kind::Dir(children) = &mut current_data.kind {
+                TreemapLayout::new().layout_items(children, rect);
+                children
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, data)| data.bounds.w > 0.0 && data.bounds.h > 0.0)
+                    .for_each(|(index, data)| {
+                        let mut show_context_menu = false;
+                        let mut data_widget = DataWidget::new(data);
+                        let response = data_widget.ui(ui);
+                        if !response.context_menu_opened() {
+                            if response.double_clicked() && matches!(data.kind, Kind::Dir(_)) {
+                                clicked_data_index = Some(index);
+                            } else if response.secondary_clicked() {
+                                show_context_menu = true;
+                            } else if response.hovered() && data_widget.need_tooltip {
+                                egui::show_tooltip(
+                                    ui.ctx(),
+                                    ui.layer_id(),
+                                    egui::Id::new("my_tooltip"),
+                                    |ui| {
+                                        ui.heading(&data.name);
+                                        ui.separator();
+                                        ui.add(
+                                            Label::new(format!(
+                                                "Size: {}",
+                                                humansize::format_size(data.size() as u64, DECIMAL)
+                                            ))
+                                            .wrap_mode(TextWrapMode::Extend),
+                                        );
+                                    },
+                                );
+                            }
+                        }
+                        if response.context_menu_opened() || show_context_menu {
+                            let mut full_path = full_path.clone();
+                            response.context_menu(|ui| {
+                                ui.heading(&data.name);
+                                ui.separator();
+                                if ui.button("Browse...").clicked() {
+                                    full_path.push(&data.name);
+                                    if let Err(e) = opener::reveal(full_path.clone()) {
+                                        error!("Error opening file: {}", e)
+                                    }
+                                    ui.close_menu();
+                                }
+                                if ui.button("Ignore path").clicked() {
+                                    full_path.push(&data.name);
+                                    let mut settings = self.settings.lock().unwrap();
+                                    settings.add_ignored_path(full_path);
+                                    ui.close_menu();
+                                }
+                            });
+                        }
+                    });
+            }
+        }
+
+        if let Some(clicked_index) = clicked_data_index {
+            if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
+                if let Kind::Dir(children) = &mut current_data.kind {
+                    if clicked_index < children.len() {
+                        let taken_data = children.swap_remove(clicked_index); // swap_remove because it is faster than a normal remove
+                        self.analysis_result.data_stack.push(taken_data);
+                    }
+                }
+            }
+        }
+    }
+}

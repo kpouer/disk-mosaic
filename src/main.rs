@@ -1,0 +1,29 @@
+#![windows_subsystem = "windows"]
+mod analysis_result;
+mod data;
+mod disk_analyzer;
+mod service;
+mod settings;
+mod task;
+mod ui;
+mod util;
+
+use crate::settings::Settings;
+use disk_analyzer::DiskAnalyzerApp;
+use egui_extras::install_image_loaders;
+
+fn main() -> eframe::Result {
+    env_logger::init();
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Disk Mosaic",
+        options,
+        Box::new(|ctx| {
+            install_image_loaders(&ctx.egui_ctx);
+            egui_solarized::install(&ctx.egui_ctx);
+            let settings = Settings::default();
+            settings.init(&ctx.egui_ctx);
+            Ok(Box::new(DiskAnalyzerApp::new(settings)))
+        }),
+    )
+}
