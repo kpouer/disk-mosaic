@@ -1,5 +1,6 @@
 use crate::analysis_result::AnalysisResult;
 use crate::data::Data;
+use crate::settings::Settings;
 use crate::task::Task;
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::path_bar::PathBar;
@@ -10,6 +11,7 @@ use log::info;
 use std::ops::{Add, AddAssign};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use std::thread;
@@ -69,12 +71,13 @@ pub struct Analyzer {
     scanned_directories: u64,
     scan_result: ScanResult,
     about_open: bool,
+    settings: Arc<Mutex<Settings>>,
 }
 
 impl Analyzer {
     /// Create a new analyzer.
     /// The analyzer will scan the given directory and all subdirectories in a thread.
-    pub(crate) fn new(root: PathBuf) -> Self {
+    pub(crate) fn new(root: PathBuf, settings: Arc<Mutex<Settings>>) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         let stopper = Arc::new(AtomicBool::new(false));
         let root_copy = root.clone();
@@ -94,6 +97,7 @@ impl Analyzer {
             scanned_directories: 0,
             scan_result: ScanResult::default(),
             about_open: false,
+            settings,
         }
     }
 
@@ -108,7 +112,7 @@ impl Analyzer {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            TreeMapPanel::new(&mut self.analysis_result).show(ui);
+            TreeMapPanel::new(&mut self.analysis_result, &self.settings).show(ui);
         });
         ctx.request_repaint_after(Duration::from_millis(60));
 

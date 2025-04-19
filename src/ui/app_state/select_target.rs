@@ -2,6 +2,7 @@ use crate::service::storage_manager::StorageManager;
 use crate::service::storage_manager::storage::Storage;
 use crate::settings::Settings;
 use crate::ui::about_dialog::AboutDialog;
+use crate::ui::settings_panel::SettingsContext;
 use crate::ui::settings_panel::SettingsDialog;
 use egui::{Button, Context, Response, ScrollArea, Ui, Vec2, Widget};
 use home::home_dir;
@@ -14,7 +15,7 @@ pub(crate) struct SelectTarget {
     settings: Arc<Mutex<Settings>>,
     storage_manager: StorageManager,
     about_open: bool,
-    settings_open: bool,
+    settings_context: SettingsContext,
 }
 
 impl SelectTarget {
@@ -23,7 +24,7 @@ impl SelectTarget {
             settings,
             storage_manager: Default::default(),
             about_open: false,
-            settings_open: false,
+            settings_context: SettingsContext::default(),
         }
     }
 
@@ -33,7 +34,7 @@ impl SelectTarget {
                 ui.heading("Select Scan Target");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
-                    SettingsDialog::new(&mut self.settings_open, &self.settings)
+                    SettingsDialog::new(&mut self.settings_context, &self.settings)
                         .show_button(ctx, ui);
                 });
             });

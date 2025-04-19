@@ -6,6 +6,7 @@ mod service;
 mod settings;
 mod task;
 mod ui;
+mod util;
 
 use crate::settings::Settings;
 use disk_analyzer::DiskAnalyzerApp;

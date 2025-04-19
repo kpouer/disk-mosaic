@@ -1,17 +1,27 @@
 use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
+use crate::settings::Settings;
 use crate::ui::data_widget::DataWidget;
 use egui::{Label, TextWrapMode, Ui, Widget};
 use humansize::DECIMAL;
+use log::error;
+use std::sync::{Arc, Mutex};
 use treemap::{Mappable, TreemapLayout};
 
 pub(crate) struct TreeMapPanel<'a> {
     analysis_result: &'a mut AnalysisResult,
+    settings: &'a Arc<Mutex<Settings>>,
 }
 
 impl<'a> TreeMapPanel<'a> {
-    pub(crate) fn new(analysis_result: &'a mut AnalysisResult) -> Self {
-        TreeMapPanel { analysis_result }
+    pub(crate) fn new(
+        analysis_result: &'a mut AnalysisResult,
+        settings: &'a Arc<Mutex<Settings>>,
+    ) -> Self {
+        TreeMapPanel {
+            analysis_result,
+            settings,
+        }
     }
 
     pub(crate) fn show(&mut self, ui: &mut Ui) {
@@ -69,9 +79,16 @@ impl<'a> TreeMapPanel<'a> {
                                 ui.separator();
                                 if ui.button("Browse...").clicked() {
                                     full_path.push(&data.name);
-                                    if let Err(e) = opener::reveal(full_path) {
-                                        println!("Error opening file: {}", e)
+                                    if let Err(e) = opener::reveal(full_path.clone()) {
+                                        error!("Error opening file: {}", e)
                                     }
+                                    ui.close_menu();
+                                }
+                                if ui.button("Ignore path").clicked() {
+                                    full_path.push(&data.name);
+                                    let mut settings = self.settings.lock().unwrap();
+                                    settings.add_ignored_path(full_path);
+                                    ui.close_menu();
                                 }
                             });
                         }

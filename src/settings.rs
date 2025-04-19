@@ -10,6 +10,8 @@ pub(crate) struct Settings {
     /// Mark the Settings as dirty (need to be saved)
     dirty: bool,
     theme: ThemePreference,
+    /// List of paths to ignore (might be cloud drives, etc.
+    ignored_path: Vec<PathBuf>,
 }
 
 impl Default for Settings {
@@ -20,6 +22,7 @@ impl Default for Settings {
             .unwrap_or(Self {
                 dirty: false,
                 theme: ThemePreference::System,
+                ignored_path: Vec::new(),
             })
     }
 }
@@ -36,6 +39,18 @@ impl Settings {
 
     pub(crate) fn init(&self, ctx: &Context) {
         ctx.set_theme(self.theme);
+    }
+
+    pub(crate) fn add_ignored_path(&mut self, path: PathBuf) {
+        self.ignored_path.push(path);
+    }
+
+    pub(crate) fn is_path_ignored(&self, path: &PathBuf) -> bool {
+        self.ignored_path.contains(path)
+    }
+
+    pub(crate) fn ignored_paths_mut(&mut self) -> &mut Vec<PathBuf> {
+        &mut self.ignored_path
     }
 
     pub(crate) fn save(&self) -> Result<(), std::io::Error> {

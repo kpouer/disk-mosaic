@@ -1,20 +1,24 @@
 use crate::analysis_result::AnalysisResult;
+use crate::settings::Settings;
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::path_bar::PathBar;
 use crate::ui::treemap_panel::TreeMapPanel;
 use egui::Context;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(crate) struct ResultView {
     analysis_result: AnalysisResult,
     about_open: bool,
+    settings: Arc<Mutex<Settings>>,
 }
 
 impl ResultView {
-    pub fn new(analysis_result: AnalysisResult) -> Self {
+    pub fn new(analysis_result: AnalysisResult, settings: Arc<Mutex<Settings>>) -> Self {
         Self {
             analysis_result,
             about_open: false,
+            settings,
         }
     }
 }
@@ -34,7 +38,7 @@ impl ResultView {
             });
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            TreeMapPanel::new(&mut self.analysis_result).show(ui);
+            TreeMapPanel::new(&mut self.analysis_result, &self.settings).show(ui);
         });
 
         go_back

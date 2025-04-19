@@ -35,14 +35,20 @@ impl eframe::App for DiskAnalyzerApp {
             AppState::SelectDisk(select_target) => {
                 if let Some(selected_path) = select_target.show(ctx) {
                     info!("Selected path: {selected_path:?}");
-                    self.state = AppState::Analyzing(Analyzer::new(selected_path));
+                    self.state = AppState::Analyzing(Analyzer::new(
+                        selected_path,
+                        Arc::clone(&self.settings),
+                    ));
                 }
             }
             AppState::Analyzing(analyzer) => match analyzer.show(ctx) {
                 AnalyzerUpdate::Finished => {
                     info!("Analysis finished, transitioning to ResultView");
                     let analysis_result = std::mem::take(&mut analyzer.analysis_result);
-                    self.state = AppState::Analyzed(ResultView::new(analysis_result));
+                    self.state = AppState::Analyzed(ResultView::new(
+                        analysis_result,
+                        Arc::clone(&self.settings),
+                    ));
                 }
                 AnalyzerUpdate::GoBack => {
                     info!("Back requested from Analyzer, transitioning to SelectTarget");
