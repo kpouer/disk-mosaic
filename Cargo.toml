@@ -15,7 +15,7 @@ treemap = "0.3.2"
 log = "0.4"
 rayon = "1.10.0"
 open = "5.3.2" # Added for opening files/directories
-egui_solarized = { path = "../egui-solarized" }
+egui_solarized = "0.2.0"
 sysinfo = "0.34.2"
 rfd = "0.15.3"
 unicode-normalization = "0.1.24"

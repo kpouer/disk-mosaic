@@ -105,7 +105,7 @@ impl<'a> Task<'a> {
             .par_iter()
             .filter_map(|entry| {
                 if stopper.load(Ordering::Relaxed) {
-                    info!("Stop requested during recursive scan");
+                    debug!("Stop requested during recursive scan");
                     return None;
                 }
 
