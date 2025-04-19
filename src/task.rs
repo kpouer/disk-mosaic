@@ -70,9 +70,7 @@ impl<'a> Task<'a> {
         sender: &Sender<Message>,
         settings: &Arc<Mutex<Settings>>,
     ) -> Result<Vec<Data>, MyError> {
-        if let Err(e) = sender.send(Message::DirectoryScanStart(
-            path.absolute_path().unwrap_or_default(),
-        )) {
+        if let Err(e) = sender.send(Message::DirectoryScanStart(path.absolute_path())) {
             warn!("Received dropped {e}");
             return Err(MyError::ReceiverDropped);
         }

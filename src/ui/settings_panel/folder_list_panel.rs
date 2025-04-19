@@ -1,5 +1,5 @@
 use crate::ui::settings_panel::HashListPanel;
-use crate::util::PathBufToString;
+use crate::util::{FONT_SIZE, PathBufToString};
 use eframe::emath::Vec2;
 use egui::{Button, Label, Sense};
 use egui_extras::{Column, TableBuilder};
@@ -27,7 +27,7 @@ impl<'a> SearchFolderPanel<'a> {
             ui.separator();
             ui.horizontal(|ui| {
                 if ui
-                    .add_sized(Vec2::new(18.0, 18.0), Button::new("+"))
+                    .add_sized(Vec2::new(FONT_SIZE, FONT_SIZE), Button::new("+"))
                     .clicked()
                 {
                     let files = FileDialog::new().pick_folders();
@@ -37,7 +37,7 @@ impl<'a> SearchFolderPanel<'a> {
                         .for_each(|path| self.data.push(path));
                 }
                 if ui
-                    .add_sized(Vec2::new(18.0, 18.0), Button::new("-"))
+                    .add_sized(Vec2::new(FONT_SIZE, FONT_SIZE), Button::new("-"))
                     .clicked()
                 {
                     self.data.remove_selection();
@@ -50,15 +50,12 @@ impl<'a> SearchFolderPanel<'a> {
                 .sense(Sense::click())
                 .column(Column::remainder())
                 .body(|body| {
-                    body.rows(18.0, self.data.len(), |mut row| {
+                    body.rows(FONT_SIZE, self.data.len(), |mut row| {
                         let folder = &self.data[row.index()];
                         row.set_selected(*self.data.selection == Some(row.index()));
                         if row
                             .col(|ui| {
-                                ui.add(
-                                    Label::new(folder.absolute_path().unwrap_or_default())
-                                        .selectable(false),
-                                );
+                                ui.add(Label::new(folder.absolute_path()).selectable(false));
                             })
                             .1
                             .clicked()

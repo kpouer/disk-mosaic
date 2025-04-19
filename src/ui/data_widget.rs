@@ -1,4 +1,5 @@
 use crate::data::Data;
+use crate::util::FONT_SIZE;
 use eframe::epaint::FontFamily::Proportional;
 use eframe::epaint::FontId;
 use egui::{Color32, Image, Pos2, Rect, Ui, Vec2, Widget};
@@ -93,7 +94,6 @@ impl<'a> DataWidget<'a> {
 }
 
 const HOVER_ZOOMING: f32 = 10.0;
-const FONT_SIZE: f32 = 18.0;
 const LABEL_COLOR: Color32 = Color32::WHITE;
 const FONT: FontId = FontId::new(FONT_SIZE, Proportional);
 

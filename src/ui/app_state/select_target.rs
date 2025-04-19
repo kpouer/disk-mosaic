@@ -4,7 +4,8 @@ use crate::settings::Settings;
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::settings_panel::SettingsContext;
 use crate::ui::settings_panel::SettingsDialog;
-use egui::{Button, Context, Response, ScrollArea, Ui, Vec2, Widget};
+use crate::util::{FONT_SIZE, PathBufToString};
+use egui::{Button, Context, Image, Response, ScrollArea, Ui, Vec2, Widget, include_image};
 use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;
@@ -17,6 +18,8 @@ pub(crate) struct SelectTarget {
     about_open: bool,
     settings_context: SettingsContext,
 }
+
+const HOME_FOLDER: &str = "Home Folder";
 
 impl SelectTarget {
     pub(crate) fn new(settings: Arc<Mutex<Settings>>) -> Self {
@@ -54,26 +57,54 @@ impl SelectTarget {
                     }
                 });
 
-                ui.separator();
-
-                if ui
-                    .add_sized(
+                if let Some(home) = home_dir() {
+                    let home_response = ui.add_sized(
                         Vec2::new(ui.available_width(), HEIGHT),
-                        Button::new("Home Folder"),
-                    )
-                    .clicked()
-                {
-                    if let Some(path) = home_dir() {
-                        selected_path = Some(path);
-                    } else {
-                        log::error!("Could not determine home directory.");
+                        Button::image_and_text(
+                            Image::new(include_image!("../../../assets/home.svg"))
+                                .tint(ui.style().visuals.widgets.noninteractive.text_color())
+                                .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
+                            HOME_FOLDER,
+                        ),
+                    );
+                    if home_response.clicked() {
+                        selected_path = Some(home);
+                    } else if home_response.hovered() {
+                        egui::show_tooltip(
+                            ui.ctx(),
+                            ui.layer_id(),
+                            egui::Id::new("my_tooltip"),
+                            |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.add(
+                                        Image::new(include_image!("../../../assets/home.svg"))
+                                            .tint(
+                                                ui.style()
+                                                    .visuals
+                                                    .widgets
+                                                    .noninteractive
+                                                    .text_color(),
+                                            )
+                                            .fit_to_exact_size(Vec2::new(FONT_SIZE, FONT_SIZE)),
+                                    );
+                                    ui.heading(HOME_FOLDER);
+                                });
+                                ui.separator();
+                                ui.label(home.absolute_path());
+                            },
+                        );
                     }
                 }
 
                 if ui
                     .add_sized(
                         Vec2::new(ui.available_width(), HEIGHT),
-                        Button::new("Select Folder..."),
+                        Button::image_and_text(
+                            Image::new(include_image!("../../../assets/directory.svg"))
+                                .tint(ui.style().visuals.widgets.noninteractive.text_color())
+                                .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
+                            "Select Folder...",
+                        ),
                     )
                     .clicked()
                 {
@@ -111,7 +142,7 @@ impl Widget for StorageWidget<'_> {
                 ui.separator();
                 ui.label(format!(
                     "Mount: {}",
-                    self.storage.mount_point.to_string_lossy()
+                    self.storage.mount_point.absolute_path()
                 ));
                 ui.label(format!(
                     "{} / {}",

@@ -44,7 +44,7 @@ static INDEX: AtomicUsize = AtomicUsize::new(0);
 impl Data {
     pub fn new_directory(path: &Path) -> Self {
         Self {
-            name: path.name().unwrap_or_default(),
+            name: path.name(),
             kind: Default::default(),
             color: Self::next_color(),
             ..Default::default()
@@ -53,7 +53,7 @@ impl Data {
 
     pub fn new_file(path: &Path, size: u64) -> Self {
         Self {
-            name: path.name().unwrap_or_default(),
+            name: path.name(),
             kind: Kind::File,
             size,
             color: Self::next_color(),
