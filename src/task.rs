@@ -1,9 +1,11 @@
 use crate::data::{Data, Kind};
 use crate::settings::Settings;
 use crate::ui::app_state::analyzer::{Message, ScanResult};
+use crate::util;
+use crate::util::{MyError, PathBufToString};
 use log::{debug, info, warn};
 use rayon::prelude::*;
-use std::io::{Error, ErrorKind};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -67,12 +69,13 @@ impl<'a> Task<'a> {
         stopper: &Arc<AtomicBool>,
         sender: &Sender<Message>,
         settings: &Arc<Mutex<Settings>>,
-    ) -> Result<Vec<Data>, Error> {
-        sender
-            .send(Message::DirectoryScanStart(
-                path.to_string_lossy().to_string(),
-            ))
-            .unwrap();
+    ) -> Result<Vec<Data>, MyError> {
+        if let Err(e) = sender.send(Message::DirectoryScanStart(
+            path.absolute_path().unwrap_or_default(),
+        )) {
+            warn!("Received dropped {e}");
+            return Err(MyError::ReceiverDropped);
+        }
         let entries = match path.read_dir() {
             Ok(iter) => {
                 let iter = iter.flatten();
@@ -134,7 +137,7 @@ impl<'a> Task<'a> {
                         }
                     }
                 } else if metadata.is_file() {
-                    let size = Data::get_file_size(&entry_path);
+                    let size = util::get_file_size(&entry_path);
                     if size < BIG_FILE_THRESHOLD {
                         let mut d = small_file_data.lock().unwrap();
                         if let Kind::SmallFiles(count) = &mut d.kind {
@@ -171,9 +174,9 @@ impl<'a> Task<'a> {
             file_result.size += small_file_data.size;
         }
         if file_result.file_count != 0 {
-            sender
-                .send(Message::DirectoryScanDone(file_result))
-                .unwrap();
+            if let Err(e) = sender.send(Message::DirectoryScanDone(file_result)) {
+                warn!("Received dropped {e}");
+            }
         }
         Ok(children)
     }
@@ -184,11 +187,12 @@ impl<'a> Task<'a> {
         stopper: &Arc<AtomicBool>,
         settings: Arc<Mutex<Settings>>,
     ) {
-        sender
-            .send(Message::DirectoryScanStart(
-                path.to_string_lossy().to_string(),
-            ))
-            .unwrap();
+        if let Err(e) = sender.send(Message::DirectoryScanStart(
+            path.to_string_lossy().to_string(),
+        )) {
+            warn!("Receiver dropped {e}");
+            return;
+        }
         let mut scan_result = ScanResult::default();
         match path.read_dir() {
             Ok(iter) => {
@@ -208,11 +212,11 @@ impl<'a> Task<'a> {
                         }
                         Task::new(path, sender, stopper, sender.clone(), &settings).run();
                     } else if path.is_file() {
-                        let size = Data::get_file_size(&path);
+                        let size = util::get_file_size(&path);
                         scan_result.add_size(size);
-                        sender
-                            .send(Message::Data(Data::new_file(&path, size)))
-                            .unwrap();
+                        if let Err(e) = sender.send(Message::Data(Data::new_file(&path, size))) {
+                            warn!("Receiver dropped {e}");
+                        }
                     }
                 });
             }
@@ -221,8 +225,8 @@ impl<'a> Task<'a> {
                 _ => debug!("Error reading directory: {path:?}, {e:?}"),
             },
         }
-        sender
-            .send(Message::DirectoryScanDone(scan_result))
-            .unwrap();
+        if let Err(e) = sender.send(Message::DirectoryScanDone(scan_result)) {
+            warn!("Receiver dropped {e}");
+        }
     }
 }

@@ -1,5 +1,18 @@
 use std::path::Path;
+use thiserror::Error;
 use unicode_normalization::UnicodeNormalization;
+
+#[derive(Error, Debug)]
+pub(crate) enum MyError {
+    #[error("IO Error")]
+    IOError(#[from] std::io::Error),
+    #[error("Receiver Dropped")]
+    ReceiverDropped,
+}
+
+pub fn get_file_size(path: &Path) -> u64 {
+    path.metadata().map(|metadata| metadata.len()).unwrap_or(0)
+}
 
 pub(crate) trait PathBufToString {
     fn name(&self) -> Option<String>;

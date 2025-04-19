@@ -61,10 +61,6 @@ impl Data {
         }
     }
 
-    pub fn get_file_size(path: &Path) -> u64 {
-        path.metadata().map(|metadata| metadata.len()).unwrap_or(0)
-    }
-
     pub(crate) fn next_color() -> Color32 {
         let idx = INDEX
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
