@@ -159,12 +159,7 @@ jobs:
             # Disk Mosaic ${{ github.ref_name }}
 
             Disk Mosaic is a utility tool that helps you visually identify how your disk space is used and where.
-
-            ## Downloads
-            - [Linux (tar.gz)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz)
-            - [macOS (dmg)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.dmg)
-            - [Windows (zip)](disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip)
-          draft: false
+          draft: true
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
