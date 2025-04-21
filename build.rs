@@ -1,7 +1,7 @@
 #[cfg(windows)]
 fn main() {
     let mut res = winres::WindowsResource::new();
-    res.set_icon("media/img.png");
+    res.set_icon("media/icon.png");
     res.compile().unwrap();
 }
 
