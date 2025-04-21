@@ -39,15 +39,6 @@ fn icon_data() -> egui::IconData {
 
     match eframe::icon_data::from_png_bytes(app_icon_png_bytes) {
         Ok(icon_data) => icon_data,
-        Err(err) => {
-            #[cfg(debug_assertions)]
-            panic!("Failed to load app icon: {err}");
-
-            #[cfg(not(debug_assertions))]
-            {
-                re_log::warn!("Failed to load app icon: {err}");
-                Default::default()
-            }
-        }
+        Err(err) => panic!("Failed to load app icon: {err}"),
     }
 }
