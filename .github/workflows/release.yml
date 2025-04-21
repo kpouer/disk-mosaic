@@ -79,7 +79,6 @@ jobs:
           # Copy binary and rename to friendly name
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/disk-mosaic/${{ matrix.friendly_name }}
           # Copy assets
-          cp -r assets release/disk-mosaic/
           # Copy license and readme
           cp LICENSE release/disk-mosaic/ || cp LICENCE release/disk-mosaic/ || echo "No license file found"
           cp README.md release/disk-mosaic/ || echo "No README.md file found"
@@ -112,7 +111,8 @@ jobs:
           mkdir -p "$APP_DIR/Contents/Resources"
 
           # Copy assets, license, readme, and third-party licenses
-          cp -r assets "$APP_DIR/Contents/Resources/"
+          cp packaging/DiskMosaic.app/Contents/Info.plist "$APP_DIR/Contents/"
+          cp packaging/DiskMosaic.app/Contents/Resources/AppIcon.icns "$APP_DIR/Contents/Resources/"
           cp LICENSE "$APP_DIR/Contents/Resources/" || cp LICENCE "$APP_DIR/Contents/Resources/" || echo "No license file found"
           cp README.md "$APP_DIR/Contents/Resources/" || echo "No README.md file found"
           cp THIRDPARTY.yml "$APP_DIR/Contents/Resources/" || echo "No THIRDPARTY.yml file found"
