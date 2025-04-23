@@ -40,7 +40,7 @@ impl<'a> SettingsDialog<'a> {
             .show(ctx, |ui| {
                 ui.label("Color scheme: ");
                 let mut settings = self.settings.lock().unwrap();
-                egui::ComboBox::from_label("")
+                egui::ComboBox::from_id_salt("ColorScheme")
                     .selected_text(format!("{:?}", settings.color_scheme()))
                     .show_ui(ui, |ui| {
                         ColorScheme::iter()
