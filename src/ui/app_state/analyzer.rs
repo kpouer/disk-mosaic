@@ -166,7 +166,9 @@ impl Analyzer {
                     self.scanning,
                 ));
                 ui.add(scanning_label);
-                AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
+                });
             });
         });
 
