@@ -45,18 +45,12 @@ impl SelectTarget {
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 let mut selected_path = None;
-                ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
-                    if self.storage_manager.is_empty() {
-                        ui.label("(No disks found by sysinfo)");
-                    } else {
-                        self.storage_manager.iter().for_each(|disk| {
-                            if StorageWidget::new(disk).ui(ui).clicked() {
-                                selected_path = Some(disk.mount_point.to_owned());
-                            }
-                        });
+                self.storage_manager.iter().for_each(|disk| {
+                    if StorageWidget::new(disk).ui(ui).clicked() {
+                        selected_path = Some(disk.mount_point.to_owned());
                     }
                 });
-
+                ui.separator();
                 if let Some(home) = home_dir() {
                     let home_response = ui.add_sized(
                         Vec2::new(ui.available_width(), HEIGHT),
