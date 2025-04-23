@@ -1,14 +1,18 @@
+use crate::settings::ColorScheme::Egui;
 use egui::Context;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::PathBuf;
+use std::sync::Arc;
+use strum_macros::{EnumIter, EnumString};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Settings {
     #[serde(skip)]
     /// Mark the Settings as dirty (need to be saved)
     pub(crate) dirty: bool,
+    color_scheme: ColorScheme,
     theme: ThemePreference,
     /// List of paths to ignore (might be cloud drives, etc.
     ignored_path: Vec<PathBuf>,
@@ -21,6 +25,7 @@ impl Default for Settings {
             .and_then(|settings_file| serde_json::from_reader::<File, Settings>(settings_file).ok())
             .unwrap_or(Self {
                 dirty: false,
+                color_scheme: Egui,
                 theme: ThemePreference::System,
                 ignored_path: Vec::new(),
             })
@@ -28,6 +33,15 @@ impl Default for Settings {
 }
 
 impl Settings {
+
+    pub fn color_scheme(&self) -> ColorScheme {
+        self.color_scheme
+    }
+
+    pub fn color_scheme_mut(&mut self) -> &mut ColorScheme {
+        &mut self.color_scheme
+    }
+
     pub(crate) fn theme(&self) -> ThemePreference {
         self.theme
     }
@@ -39,6 +53,7 @@ impl Settings {
 
     pub(crate) fn init(&self, ctx: &Context) {
         ctx.set_theme(self.theme);
+        self.color_scheme.apply(ctx);
     }
 
     pub(crate) fn add_ignored_path(&mut self, path: PathBuf) {
@@ -80,6 +95,27 @@ impl Settings {
             settings_folder.push("settings.json");
             settings_folder
         })
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, EnumIter, EnumString, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum ColorScheme {
+    #[default]
+    Egui,
+    Solarized,
+}
+
+impl ColorScheme {
+    pub(crate) fn apply(&self, ctx: &Context) {
+        match self {
+            Egui => {
+                ctx.options_mut(|options| {
+                    options.dark_style = Arc::new(egui::Theme::Dark.default_style());
+                    options.light_style = Arc::new(egui::Theme::Light.default_style());
+                });
+            }
+            ColorScheme::Solarized => egui_solarized::install(ctx),
+        }
     }
 }
 

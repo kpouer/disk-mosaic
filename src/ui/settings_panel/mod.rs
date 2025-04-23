@@ -1,10 +1,11 @@
 mod folder_list_panel;
 
-use crate::settings::{Settings, ThemePreference};
+use crate::settings::{ColorScheme, Settings, ThemePreference};
 use crate::ui::settings_panel::folder_list_panel::SearchFolderPanel;
 use egui::Context;
 use std::ops::Index;
 use std::sync::{Arc, Mutex};
+use strum::IntoEnumIterator;
 
 pub(crate) struct SettingsDialog<'a> {
     settings_context: &'a mut SettingsContext,
@@ -37,8 +38,20 @@ impl<'a> SettingsDialog<'a> {
         egui::Window::new("Settings")
             .open(&mut self.settings_context.open)
             .show(ctx, |ui| {
-                ui.label("Theme : ");
+                ui.label("Color scheme: ");
                 let mut settings = self.settings.lock().unwrap();
+                egui::ComboBox::from_label("")
+                    .selected_text(format!("{:?}", settings.color_scheme()))
+                    .show_ui(ui, |ui| {
+                        ColorScheme::iter()
+                            .for_each(|scheme| {
+                                if ui.selectable_value(settings.color_scheme_mut(), scheme, format!("{scheme:?}")).clicked() {
+                                    scheme.apply(ctx);
+                                }
+                            });
+                        
+                    });
+                ui.label("Theme: ");
                 ui.horizontal(|ui| {
                     if ui
                         .radio(settings.theme() == ThemePreference::System, "System")
