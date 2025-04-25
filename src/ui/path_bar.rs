@@ -1,5 +1,5 @@
 use crate::data::Data;
-use egui::{Button, Ui};
+use egui::{Button, Ui, Vec2};
 
 #[derive(Debug)]
 pub struct PathBar<'a> {
@@ -15,14 +15,18 @@ impl<'a> PathBar<'a> {
     pub(crate) fn show(&self, ui: &mut Ui) -> Option<usize> {
         let mut clicked_index = None;
         ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 0.0;
-            self.path_components
+            {
+                let spacing = ui.spacing_mut();
+                spacing.item_spacing.x = 0.0;
+                spacing.button_padding = Vec2::ZERO;
+            }
+            self.path_components[1..]
                 .iter()
                 .enumerate()
                 .for_each(|(index, data)| {
                     let is_last = index == self.path_components.len() - 1;
                     if ui
-                        .add_enabled(!is_last, Button::new(format!("/{}", data.name.as_str())))
+                        .add_enabled(!is_last, Button::new(format!("/{}", &data.name)))
                         .clicked()
                     {
                         clicked_index = Some(index);
