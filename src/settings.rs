@@ -7,6 +7,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use strum_macros::{EnumIter, EnumString};
 
+const BIG_FILE_THRESHOLD: u64 = 10000000;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Settings {
     #[serde(skip)]
@@ -16,6 +18,8 @@ pub(crate) struct Settings {
     theme: ThemePreference,
     /// List of paths to ignore (might be cloud drives, etc.
     ignored_path: Vec<PathBuf>,
+    /// Threshold for big files (in bytes). Files smaller than this will be displayed as a single block.
+    big_file_threshold: u64,
 }
 
 impl Default for Settings {
@@ -28,12 +32,12 @@ impl Default for Settings {
                 color_scheme: Egui,
                 theme: ThemePreference::System,
                 ignored_path: Vec::new(),
+                big_file_threshold: BIG_FILE_THRESHOLD,
             })
     }
 }
 
 impl Settings {
-
     pub fn color_scheme(&self) -> ColorScheme {
         self.color_scheme
     }
@@ -70,6 +74,10 @@ impl Settings {
         &mut self.ignored_path
     }
 
+    pub(crate) fn big_file_threshold(&self) -> u64 {
+        self.big_file_threshold
+    }
+
     pub(crate) fn save(&self) -> Result<(), std::io::Error> {
         info!("save");
         if self.dirty {
@@ -98,7 +106,9 @@ impl Settings {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, EnumIter, EnumString, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(
+    Debug, Serialize, Deserialize, EnumIter, EnumString, Clone, Copy, PartialEq, Eq, Hash, Default,
+)]
 pub enum ColorScheme {
     #[default]
     Egui,

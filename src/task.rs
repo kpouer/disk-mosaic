@@ -20,8 +20,6 @@ pub struct Task<'a> {
     settings: &'a Arc<Mutex<Settings>>,
 }
 
-const BIG_FILE_THRESHOLD: u64 = 10000000;
-
 impl<'a> Task<'a> {
     pub fn new(
         path: PathBuf,
@@ -74,6 +72,7 @@ impl<'a> Task<'a> {
             warn!("Received dropped {e}");
             return Err(MyError::ReceiverDropped);
         }
+        let big_file_threshold = settings.lock().unwrap().big_file_threshold();
         let entries = match path.read_dir() {
             Ok(iter) => {
                 let iter = iter.flatten();
@@ -136,7 +135,7 @@ impl<'a> Task<'a> {
                     }
                 } else if metadata.is_file() {
                     let size = util::get_file_size(&entry_path);
-                    if size < BIG_FILE_THRESHOLD {
+                    if size < big_file_threshold {
                         let mut d = small_file_data.lock().unwrap();
                         if let Kind::SmallFiles(count) = &mut d.kind {
                             *count += 1;
