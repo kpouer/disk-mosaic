@@ -28,7 +28,7 @@ impl ResultView {
         let mut go_back = false;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("⬅ Back").clicked() {
+                if ui.button("⬅").clicked() {
                     go_back = true;
                 }
                 if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {

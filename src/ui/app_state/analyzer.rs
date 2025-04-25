@@ -148,7 +148,7 @@ impl Analyzer {
         let mut update_status = AnalyzerUpdate::Running;
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("⬅ Back").clicked() {
+                if ui.button("⬅").clicked() {
                     update_status = AnalyzerUpdate::GoBack;
                 }
                 if ui.button("Stop").clicked() {
