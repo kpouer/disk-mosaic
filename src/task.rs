@@ -110,7 +110,7 @@ impl<'a> Task<'a> {
                 let metadata = match entry.metadata() {
                     Ok(m) => m,
                     Err(e) => {
-                        debug!("Failed to get metadata for {:?}: {}", entry_path, e);
+                        debug!("Failed to get metadata for {entry_path:?}: {e}");
                         return None;
                     }
                 };
@@ -118,7 +118,7 @@ impl<'a> Task<'a> {
                     {
                         let settings = settings.lock().unwrap();
                         if settings.is_path_ignored(&entry_path) {
-                            info!("Ignoring path: {:?}", entry_path);
+                            info!("Ignoring path: {entry_path:?}");
                             return None;
                         }
                     }
