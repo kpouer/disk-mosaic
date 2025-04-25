@@ -78,6 +78,11 @@ impl Settings {
         self.big_file_threshold
     }
 
+    pub(crate) fn reset_big_file_threshold(&mut self) {
+        self.big_file_threshold = BIG_FILE_THRESHOLD;
+        self.dirty = true;
+    }
+
     pub(crate) fn save(&self) -> Result<(), std::io::Error> {
         info!("save");
         if self.dirty {

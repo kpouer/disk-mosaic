@@ -103,8 +103,8 @@ impl<'a> SettingsDialog<'a> {
                             response.show_tooltip_text("Smaller will be be grouped as a remaining group without showing details. \
                         Reducing this threshold allow to show them but will also reduce the performance and consume more memory.")
                         };
-                        if ui.button("Reset").clicked() {
-                            settings.big_file_threshold = self.settings_context.original_big_file_threshold;
+                        if ui.button("Default value").clicked() {
+                            settings.reset_big_file_threshold();
                         }
                         ui.end_row();
                     });
@@ -168,17 +168,6 @@ impl<'a, T> HashListPanel<'a, T> {
 
 #[derive(Default, Debug)]
 pub(crate) struct SettingsContext {
-    /// original big file threshold used for resetting the widget
-    pub(crate) original_big_file_threshold: u64,
     pub(crate) open: bool,
     pub(crate) ignored_folders_selection: Option<usize>,
-}
-
-impl SettingsContext {
-    pub(crate) fn new(settings: &Arc<Mutex<Settings>>) -> Self {
-        Self {
-            original_big_file_threshold: settings.lock().unwrap().big_file_threshold(),
-            ..Default::default()
-        }
-    }
 }

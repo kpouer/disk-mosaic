@@ -24,7 +24,7 @@ const HOME_FOLDER: &str = "Home Folder";
 impl SelectTarget {
     pub(crate) fn new(settings: Arc<Mutex<Settings>>) -> Self {
         Self {
-            settings_context: SettingsContext::new(&settings),
+            settings_context: SettingsContext::default(),
             settings,
             storage_manager: Default::default(),
             about_open: false,
