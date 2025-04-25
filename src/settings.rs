@@ -19,7 +19,7 @@ pub(crate) struct Settings {
     /// List of paths to ignore (might be cloud drives, etc.
     ignored_path: Vec<PathBuf>,
     /// Threshold for big files (in bytes). Files smaller than this will be displayed as a single block.
-    big_file_threshold: u64,
+    pub(crate) big_file_threshold: u64,
 }
 
 impl Default for Settings {

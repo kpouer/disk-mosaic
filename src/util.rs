@@ -1,3 +1,5 @@
+#[cfg(feature = "filesize_crate")]
+use filesize::PathExt;
 use std::path::Path;
 use thiserror::Error;
 use unicode_normalization::UnicodeNormalization;
@@ -12,8 +14,14 @@ pub(crate) enum MyError {
     ReceiverDropped,
 }
 
+#[cfg(not(feature = "filesize_crate"))]
 pub fn get_file_size(path: &Path) -> u64 {
     path.metadata().map(|metadata| metadata.len()).unwrap_or(0)
+}
+
+#[cfg(feature = "filesize_crate")]
+pub fn get_file_size(path: &Path) -> u64 {
+    path.size_on_disk().unwrap_or(0)
 }
 
 pub(crate) trait PathBufToString {

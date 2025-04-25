@@ -5,7 +5,7 @@ use crate::ui::about_dialog::AboutDialog;
 use crate::ui::settings_panel::SettingsContext;
 use crate::ui::settings_panel::SettingsDialog;
 use crate::util::{FONT_SIZE, PathBufToString};
-use egui::{Button, Context, Image, Response, ScrollArea, Ui, Vec2, Widget, include_image};
+use egui::{Button, Context, Image, Response, Ui, Vec2, Widget, include_image};
 use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;

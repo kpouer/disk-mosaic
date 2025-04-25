@@ -8,23 +8,37 @@ use std::path::PathBuf;
 
 pub(super) struct SearchFolderPanel<'a> {
     id_salt: &'a str,
-    title: &'a str,
+    title: Option<&'a str>,
     data: HashListPanel<'a, PathBuf>,
 }
 
 impl<'a> SearchFolderPanel<'a> {
-    pub(super) fn new(id: &'a str, title: &'a str, data: HashListPanel<'a, PathBuf>) -> Self {
+    pub(super) fn new(id: &'a str, data: HashListPanel<'a, PathBuf>) -> Self {
         Self {
             id_salt: id,
-            title,
+            title: None,
+            data,
+        }
+    }
+
+    pub(super) fn with_title(
+        id: &'a str,
+        title: &'a str,
+        data: HashListPanel<'a, PathBuf>,
+    ) -> Self {
+        Self {
+            id_salt: id,
+            title: Some(title),
             data,
         }
     }
 
     pub(super) fn show(mut self, ui: &mut egui::Ui) -> bool {
         ui.vertical(|ui| {
-            ui.heading(self.title);
-            ui.separator();
+            if let Some(title) = self.title {
+                ui.heading(title);
+                ui.separator();
+            }
             ui.horizontal(|ui| {
                 if ui
                     .add_sized(Vec2::new(FONT_SIZE, FONT_SIZE), Button::new("+"))
@@ -43,7 +57,6 @@ impl<'a> SearchFolderPanel<'a> {
                     self.data.remove_selection();
                 }
             });
-            ui.separator();
             TableBuilder::new(ui)
                 .id_salt(self.id_salt)
                 .striped(true)

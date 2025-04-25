@@ -36,72 +36,87 @@ impl<'a> SettingsDialog<'a> {
     }
 
     fn show(&mut self, ctx: &Context) {
+        let mut settings = self.settings.lock().unwrap();
         egui::Window::new("Settings")
             .open(&mut self.settings_context.open)
             .show(ctx, |ui| {
-                ui.label("Color scheme: ");
-                let mut settings = self.settings.lock().unwrap();
-                egui::ComboBox::from_id_salt("ColorScheme")
-                    .selected_text(format!("{:?}", settings.color_scheme()))
-                    .show_ui(ui, |ui| {
-                        ColorScheme::iter().for_each(|scheme| {
+                egui::Grid::new("my_grid")
+                    .num_columns(2)
+                    .spacing([40.0, 4.0])
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Color scheme: ");
+                        egui::ComboBox::from_id_salt("ColorScheme")
+                            .selected_text(format!("{:?}", settings.color_scheme()))
+                            .show_ui(ui, |ui| {
+                                ColorScheme::iter().for_each(|scheme| {
+                                    if ui
+                                        .selectable_value(
+                                            settings.color_scheme_mut(),
+                                            scheme,
+                                            format!("{scheme:?}"),
+                                        )
+                                        .clicked()
+                                    {
+                                        scheme.apply(ctx);
+                                    }
+                                });
+                            });
+                        ui.end_row();
+                        ui.label("Theme: ");
+                        ui.horizontal(|ui| {
                             if ui
-                                .selectable_value(
-                                    settings.color_scheme_mut(),
-                                    scheme,
-                                    format!("{scheme:?}"),
-                                )
+                                .radio(settings.theme() == ThemePreference::System, "System")
                                 .clicked()
                             {
-                                scheme.apply(ctx);
+                                settings.set_theme(ThemePreference::System);
+                                ctx.set_theme(ThemePreference::System);
+                            }
+                            if ui
+                                .radio(settings.theme() == ThemePreference::Dark, "Dark")
+                                .clicked()
+                            {
+                                settings.set_theme(ThemePreference::Dark);
+                                ctx.set_theme(ThemePreference::Dark);
+                            }
+                            if ui
+                                .radio(settings.theme() == ThemePreference::Light, "Light")
+                                .clicked()
+                            {
+                                settings.set_theme(ThemePreference::Light);
+                                ctx.set_theme(ThemePreference::Light);
                             }
                         });
+                        ui.end_row();
+                        ui.label("Big file threshold :");
+                        let response = ui.add(
+                            egui::DragValue::new(&mut settings.big_file_threshold)
+                                .speed(1_000_000.0) // 1MB
+                                .custom_formatter(|size, _| {
+                                    humansize::format_size(size as u64, DECIMAL)
+                                }),
+                        );
+                        if response.changed() {
+                            settings.dirty = true;
+                        }
+                        if response.hovered() {
+                            response.show_tooltip_text("Smaller will be be grouped as a remaining group without showing details. \
+                        Reducing this threshold allow to show them but will also reduce the performance and consume more memory.")
+                        };
+                        if ui.button("Reset").clicked() {
+                            settings.big_file_threshold = self.settings_context.original_big_file_threshold;
+                        }
+                        ui.end_row();
                     });
-                ui.label("Theme: ");
-                ui.horizontal(|ui| {
-                    if ui
-                        .radio(settings.theme() == ThemePreference::System, "System")
-                        .clicked()
-                    {
-                        settings.set_theme(ThemePreference::System);
-                        ctx.set_theme(ThemePreference::System);
-                    }
-                    if ui
-                        .radio(settings.theme() == ThemePreference::Dark, "Dark")
-                        .clicked()
-                    {
-                        settings.set_theme(ThemePreference::Dark);
-                        ctx.set_theme(ThemePreference::Dark);
-                    }
-                    if ui
-                        .radio(settings.theme() == ThemePreference::Light, "Light")
-                        .clicked()
-                    {
-                        settings.set_theme(ThemePreference::Light);
-                        ctx.set_theme(ThemePreference::Light);
-                    }
-                });
-                ui.separator();
-                let modified = SearchFolderPanel::new(
+                let modified = SearchFolderPanel::with_title(
                     "ignored_folders",
-                    "Ignored Folders",
+                    "Ignored folders",
                     HashListPanel::new(
                         settings.ignored_paths_mut(),
                         &mut self.settings_context.ignored_folders_selection,
                     ),
                 )
                 .show(ui);
-                ui.separator();
-                ui.heading("Big file threshold :");
-                ui.add(
-                    egui::DragValue::new(&mut self.settings_context.tmp_big_file_threshold)
-                        .speed(1_000_000.0) // 1MB
-                        .custom_formatter(|size, _| humansize::format_size(size as u64, DECIMAL)),
-                );
-                if ui.button("Reset").clicked() {
-                    self.settings_context.tmp_big_file_threshold =
-                        self.settings_context.original_big_file_threshold;
-                }
                 if modified {
                     settings.dirty = true;
                 }
@@ -153,8 +168,6 @@ impl<'a, T> HashListPanel<'a, T> {
 
 #[derive(Default, Debug)]
 pub(crate) struct SettingsContext {
-    /// big file threshold used in the widget
-    pub(crate) tmp_big_file_threshold: u64,
     /// original big file threshold used for resetting the widget
     pub(crate) original_big_file_threshold: u64,
     pub(crate) open: bool,
@@ -163,10 +176,8 @@ pub(crate) struct SettingsContext {
 
 impl SettingsContext {
     pub(crate) fn new(settings: &Arc<Mutex<Settings>>) -> Self {
-        let original_big_file_threshold = settings.lock().unwrap().big_file_threshold();
         Self {
-            tmp_big_file_threshold: original_big_file_threshold,
-            original_big_file_threshold,
+            original_big_file_threshold: settings.lock().unwrap().big_file_threshold(),
             ..Default::default()
         }
     }
