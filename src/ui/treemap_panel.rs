@@ -2,6 +2,7 @@ use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::settings::Settings;
 use crate::ui::data_widget::DataWidget;
+use eframe::emath::Vec2;
 use egui::{Event, Label, TextWrapMode, Ui, Widget};
 use humansize::DECIMAL;
 use log::error;
@@ -111,24 +112,28 @@ impl<'a> TreeMapPanel<'a> {
         }
 
         ui.ctx().input(|i| {
-            i.events.iter().for_each(|event| match event {
-                Event::MouseWheel {
+            i.events.iter().for_each(|event| {
+                if let Event::MouseWheel {
                     unit: _,
                     delta,
                     modifiers: _,
-                } => {
-                    if delta.y > 0.0 && self.analysis_result.data_stack.len() >= 2 {
-                        let index = self.analysis_result.data_stack.len() - 2;
-                        self.analysis_result.selected_index(index);
-                    } else if delta.y < 0.0 {
-                        if let Some(hovered_index) = hovered_data_index {
-                            self.zoom_in(hovered_index);
-                        }
-                    }
+                } = event
+                {
+                    self.zoom(hovered_data_index, delta.y)
                 }
-                _ => {}
             })
         });
+    }
+
+    fn zoom(&mut self, hovered_data_index: Option<usize>, delta: f32) {
+        if delta > 0.0 && self.analysis_result.data_stack.len() >= 2 {
+            let index = self.analysis_result.data_stack.len() - 2;
+            self.analysis_result.selected_index(index);
+        } else if delta < 0.0 {
+            if let Some(hovered_index) = hovered_data_index {
+                self.zoom_in(hovered_index);
+            }
+        }
     }
 
     fn zoom_in(&mut self, index: usize) {
