@@ -1,11 +1,11 @@
 use crate::service::storage_manager::StorageManager;
 use crate::service::storage_manager::storage::Storage;
-use crate::settings::Settings;
+use crate::settings::{ColorScheme, Settings};
 use crate::ui::about_dialog::AboutDialog;
 use crate::ui::settings_panel::SettingsContext;
 use crate::ui::settings_panel::SettingsDialog;
 use crate::util::{FONT_SIZE, PathBufToString};
-use egui::{Button, Context, Image, Response, Ui, Vec2, Widget, include_image};
+use egui::{Button, Color32, Context, Image, Response, Ui, Vec2, Widget, include_image};
 use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;
@@ -46,7 +46,7 @@ impl SelectTarget {
             .show(ctx, |ui| {
                 let mut selected_path = None;
                 self.storage_manager.iter().for_each(|disk| {
-                    if StorageWidget::new(disk).ui(ui).clicked() {
+                    if StorageWidget::new(disk, &self.settings).ui(ui).clicked() {
                         selected_path = Some(disk.mount_point.to_owned());
                     }
                 });
@@ -56,7 +56,7 @@ impl SelectTarget {
                         Vec2::new(ui.available_width(), HEIGHT),
                         Button::image_and_text(
                             Image::new(include_image!("../../../assets/home.svg"))
-                                .tint(ui.style().visuals.widgets.noninteractive.text_color())
+                                .tint(icon_color(&self.settings))
                                 .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
                             HOME_FOLDER,
                         ),
@@ -72,13 +72,7 @@ impl SelectTarget {
                                 ui.horizontal(|ui| {
                                     ui.add(
                                         Image::new(include_image!("../../../assets/home.svg"))
-                                            .tint(
-                                                ui.style()
-                                                    .visuals
-                                                    .widgets
-                                                    .noninteractive
-                                                    .text_color(),
-                                            )
+                                            .tint(icon_color(&self.settings))
                                             .fit_to_exact_size(Vec2::new(FONT_SIZE, FONT_SIZE)),
                                     );
                                     ui.heading(HOME_FOLDER);
@@ -95,7 +89,7 @@ impl SelectTarget {
                         Vec2::new(ui.available_width(), HEIGHT),
                         Button::image_and_text(
                             Image::new(include_image!("../../../assets/directory.svg"))
-                                .tint(ui.style().visuals.widgets.noninteractive.text_color())
+                                .tint(icon_color(&self.settings))
                                 .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT)),
                             "Select Folder...",
                         ),
@@ -113,11 +107,12 @@ impl SelectTarget {
 
 struct StorageWidget<'a> {
     storage: &'a Storage,
+    settings: &'a Arc<Mutex<Settings>>,
 }
 
 impl<'a> StorageWidget<'a> {
-    fn new(storage: &'a Storage) -> Self {
-        Self { storage }
+    fn new(storage: &'a Storage, settings: &'a Arc<Mutex<Settings>>) -> Self {
+        Self { storage, settings }
     }
 }
 
@@ -126,7 +121,7 @@ const HEIGHT: f32 = 48.0;
 impl Widget for StorageWidget<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let image = egui::Image::new(self.storage.icon())
-            .tint(ui.style().visuals.widgets.noninteractive.text_color())
+            .tint(icon_color(self.settings))
             .fit_to_exact_size(Vec2::new(HEIGHT, HEIGHT));
         let button = Button::image_and_text(image, self.storage.name());
         let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
@@ -149,5 +144,13 @@ impl Widget for StorageWidget<'_> {
             });
         }
         response
+    }
+}
+
+fn icon_color(settings: &Arc<Mutex<Settings>>) -> Color32 {
+    let theme = settings.lock().unwrap().color_scheme();
+    match theme {
+        ColorScheme::Egui => Color32::LIGHT_BLUE.linear_multiply(0.5),
+        ColorScheme::Solarized => egui_solarized::BLUE,
     }
 }
