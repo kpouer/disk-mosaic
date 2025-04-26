@@ -155,15 +155,7 @@ impl Analyzer {
                     info!("Stop requested via Stop button");
                     self.stopper.store(true, Ordering::Relaxed);
                 }
-                if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
-                    self.analysis_result.selected_index(index);
-                }
-                if ctx.input(|i| i.pointer.button_clicked(egui::PointerButton::Extra1)) {
-                    if self.analysis_result.data_stack.len() >= 2 {
-                        let index = self.analysis_result.data_stack.len() - 2;
-                        self.analysis_result.selected_index(index);
-                    }
-                }
+                PathBar::new(&mut self.analysis_result).show(ui);
 
                 let scanning_label = Label::new(format!(
                     "Dirs: {}, Files: {}, Size: {}, scanning {}",

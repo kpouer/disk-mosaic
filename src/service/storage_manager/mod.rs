@@ -27,10 +27,6 @@ impl Default for StorageManager {
 }
 
 impl StorageManager {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.storages.is_empty()
-    }
-
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Storage> {
         self.storages.iter()
     }

@@ -31,15 +31,8 @@ impl ResultView {
                 if ui.button("⬅").clicked() {
                     go_back = true;
                 }
-                if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
-                    self.analysis_result.selected_index(index);
-                }
-                if ctx.input(|i| i.pointer.button_clicked(egui::PointerButton::Extra1)) {
-                    if self.analysis_result.data_stack.len() >= 2 {
-                        let index = self.analysis_result.data_stack.len() - 2;
-                        self.analysis_result.selected_index(index);
-                    }
-                }
+                PathBar::new(&mut self.analysis_result).show(ui);
+
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     AboutDialog::new(&mut self.about_open).show_button(ctx, ui);
                 });
