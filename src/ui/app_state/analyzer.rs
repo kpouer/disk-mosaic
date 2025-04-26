@@ -158,6 +158,13 @@ impl Analyzer {
                 if let Some(index) = PathBar::new(&self.analysis_result.data_stack).show(ui) {
                     self.analysis_result.selected_index(index);
                 }
+                if ctx.input(|i| i.pointer.button_clicked(egui::PointerButton::Extra1)) {
+                    if self.analysis_result.data_stack.len() >= 2 {
+                        let index = self.analysis_result.data_stack.len() - 2;
+                        self.analysis_result.selected_index(index);
+                    }
+                }
+
                 let scanning_label = Label::new(format!(
                     "Dirs: {}, Files: {}, Size: {}, scanning {}",
                     self.scanned_directories,

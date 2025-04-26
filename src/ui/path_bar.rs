@@ -20,19 +20,20 @@ impl<'a> PathBar<'a> {
                 spacing.item_spacing.x = 0.0;
                 spacing.button_padding = Vec2::ZERO;
             }
-            self.path_components[1..]
+            self.path_components
                 .iter()
                 .enumerate()
                 .for_each(|(index, data)| {
                     let is_last = index == self.path_components.len() - 1;
                     if ui
-                        .add_enabled(!is_last, Button::new(format!("/{}", &data.name)))
+                        .add_enabled(!is_last, Button::new(format!("{}/", &data.name)))
                         .clicked()
                     {
                         clicked_index = Some(index);
                     }
                 })
         });
+
         clicked_index
     }
 }
