@@ -113,7 +113,7 @@ impl Analyzer {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            TreeMapPanel::new(&mut self.analysis_result, &self.settings).show(ui);
+            TreeMapPanel::new(&mut self.analysis_result, &self.settings, false).show(ui);
         });
         ctx.request_repaint_after(Duration::from_millis(60));
 

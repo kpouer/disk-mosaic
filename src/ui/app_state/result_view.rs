@@ -39,7 +39,7 @@ impl ResultView {
             });
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            TreeMapPanel::new(&mut self.analysis_result, &self.settings).show(ui);
+            TreeMapPanel::new(&mut self.analysis_result, &self.settings, true).show(ui);
         });
 
         go_back

@@ -2,7 +2,7 @@ use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::settings::Settings;
 use crate::ui::data_widget::DataWidget;
-use egui::{Label, TextWrapMode, Ui, Widget};
+use egui::{Event, Label, TextWrapMode, Ui, Widget};
 use humansize::DECIMAL;
 use log::error;
 use std::sync::{Arc, Mutex};
@@ -11,16 +11,19 @@ use treemap::{Mappable, TreemapLayout};
 pub(crate) struct TreeMapPanel<'a> {
     analysis_result: &'a mut AnalysisResult,
     settings: &'a Arc<Mutex<Settings>>,
+    can_zoom_in: bool,
 }
 
 impl<'a> TreeMapPanel<'a> {
     pub(crate) fn new(
         analysis_result: &'a mut AnalysisResult,
         settings: &'a Arc<Mutex<Settings>>,
+        can_zoom_in: bool,
     ) -> Self {
         TreeMapPanel {
             analysis_result,
             settings,
+            can_zoom_in,
         }
     }
 
@@ -33,6 +36,7 @@ impl<'a> TreeMapPanel<'a> {
             clip_rect.height() as f64,
         );
         let mut clicked_data_index = None;
+        let mut hovered_data_index = None;
         let mut full_path = self.analysis_result.root_path.clone();
         for item in self.analysis_result.data_stack[1..].iter() {
             full_path.push(&item.name);
@@ -53,23 +57,29 @@ impl<'a> TreeMapPanel<'a> {
                                 clicked_data_index = Some(index);
                             } else if response.secondary_clicked() {
                                 show_context_menu = true;
-                            } else if response.hovered() && data_widget.need_tooltip {
-                                egui::show_tooltip(
-                                    ui.ctx(),
-                                    ui.layer_id(),
-                                    egui::Id::new("my_tooltip"),
-                                    |ui| {
-                                        ui.heading(&data.name);
-                                        ui.separator();
-                                        ui.add(
-                                            Label::new(format!(
-                                                "Size: {}",
-                                                humansize::format_size(data.size() as u64, DECIMAL)
-                                            ))
-                                            .wrap_mode(TextWrapMode::Extend),
-                                        );
-                                    },
-                                );
+                            } else if response.hovered() {
+                                hovered_data_index = Some(index);
+                                if data_widget.need_tooltip {
+                                    egui::show_tooltip(
+                                        ui.ctx(),
+                                        ui.layer_id(),
+                                        egui::Id::new("my_tooltip"),
+                                        |ui| {
+                                            ui.heading(&data.name);
+                                            ui.separator();
+                                            ui.add(
+                                                Label::new(format!(
+                                                    "Size: {}",
+                                                    humansize::format_size(
+                                                        data.size() as u64,
+                                                        DECIMAL
+                                                    )
+                                                ))
+                                                .wrap_mode(TextWrapMode::Extend),
+                                            );
+                                        },
+                                    );
+                                }
                             }
                         }
                         if response.context_menu_opened() || show_context_menu {
@@ -97,14 +107,46 @@ impl<'a> TreeMapPanel<'a> {
         }
 
         if let Some(clicked_index) = clicked_data_index {
-            if let Some(current_data) = self.analysis_result.data_stack.last_mut() {
-                if let Kind::Dir(children) = &mut current_data.kind {
-                    if clicked_index < children.len() {
-                        let taken_data = children.swap_remove(clicked_index); // swap_remove because it is faster than a normal remove
-                        self.analysis_result.data_stack.push(taken_data);
+            self.zoom_in(clicked_index);
+        }
+
+        ui.ctx().input(|i| {
+            i.events.iter().for_each(|event| match event {
+                Event::MouseWheel {
+                    unit: _,
+                    delta,
+                    modifiers: _,
+                } => {
+                    if delta.y > 0.0 && self.analysis_result.data_stack.len() >= 2 {
+                        let index = self.analysis_result.data_stack.len() - 2;
+                        self.analysis_result.selected_index(index);
+                    } else if delta.y < 0.0 {
+                        if let Some(hovered_index) = hovered_data_index {
+                            self.zoom_in(hovered_index);
+                        }
                     }
                 }
+                _ => {}
+            })
+        });
+    }
+
+    fn zoom_in(&mut self, index: usize) {
+        if !self.can_zoom_in {
+            return;
+        }
+        if let Some(parent_node) = self.analysis_result.data_stack.last_mut() {
+            let Kind::Dir(children) = &mut parent_node.kind else {
+                error!("The parent node is not a directory");
+                return;
+            };
+            if let Some(data) = children.get(index) {
+                if !matches!(data.kind, Kind::Dir(_)) {
+                    return;
+                }
             }
+            let taken_data = children.swap_remove(index); // swap_remove because it is faster than a normal remove
+            self.analysis_result.data_stack.push(taken_data);
         }
     }
 }
