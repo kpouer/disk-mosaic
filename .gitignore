@@ -1,1 +1,4 @@
 /target
+/.junie/
+/.idea/
+.DS_Store
