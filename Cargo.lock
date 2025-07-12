@@ -3,6 +3,33 @@
 version = 4
 
 [[package]]
+name = "Disk-Mosaic"
+version = "0.1.1"
+dependencies = [
+ "eframe",
+ "egui",
+ "egui_extras",
+ "egui_solarized",
+ "env_logger",
+ "filesize",
+ "home",
+ "humansize",
+ "log",
+ "opener",
+ "rayon",
+ "rfd",
+ "serde",
+ "serde_json",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
+ "sysinfo",
+ "thiserror 2.0.12",
+ "treemap",
+ "unicode-normalization",
+ "winres",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -816,33 +843,6 @@ name = "data-url"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c297a1c74b71ae29df00c3e22dd9534821d60eb9af5a0192823fa2acea70c2a"
-
-[[package]]
-name = "disk-mosaic"
-version = "0.1.1"
-dependencies = [
- "eframe",
- "egui",
- "egui_extras",
- "egui_solarized",
- "env_logger",
- "filesize",
- "home",
- "humansize",
- "log",
- "opener",
- "rayon",
- "rfd",
- "serde",
- "serde_json",
- "strum 0.27.1",
- "strum_macros 0.27.1",
- "sysinfo",
- "thiserror 2.0.12",
- "treemap",
- "unicode-normalization",
- "winres",
-]
 
 [[package]]
 name = "dispatch"
