@@ -33,3 +33,8 @@ winres = "0.1"
 [features]
 default = []
 filesize_crate = ["filesize"]
+
+[profile.release]
+codegen-units = 1
+opt-level = 2
+lto = true
