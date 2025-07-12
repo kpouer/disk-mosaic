@@ -13,14 +13,6 @@ pub(super) struct SearchFolderPanel<'a> {
 }
 
 impl<'a> SearchFolderPanel<'a> {
-    pub(super) fn new(id: &'a str, data: HashListPanel<'a, PathBuf>) -> Self {
-        Self {
-            id_salt: id,
-            title: None,
-            data,
-        }
-    }
-
     pub(super) fn with_title(
         id: &'a str,
         title: &'a str,
