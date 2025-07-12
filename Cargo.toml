@@ -3,7 +3,14 @@ name = "Disk-Mosaic"
 version = "0.1.1"
 edition = "2024"
 build = "build.rs"
+authors = ["Matthieu Casanova"]
+description = "Disk Mosaic is a disk utility helping you to identify biggest folders"
+homepage = "https://github.com/kpouer/Disk-Mosaic"
+repository = "https://github.com/kpouer/Disk-Mosaic"
 license = "MIT"
+readme = "README.md"
+keywords = ["desktop", "file", "folder", "disk"]
+categories = ["filesystem"]
 
 [dependencies]
 egui = "0.32"
