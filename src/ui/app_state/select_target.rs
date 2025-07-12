@@ -64,7 +64,7 @@ impl SelectTarget {
                     if home_response.clicked() {
                         selected_path = Some(home);
                     } else if home_response.hovered() {
-                        Tooltip::for_widget(&home_response).show(|ui| {
+                        Tooltip::for_widget(&home_response).at_pointer().show(|ui| {
                             ui.horizontal(|ui| {
                                 ui.add(
                                     Image::new(include_image!("../../../assets/home.svg"))
@@ -121,7 +121,7 @@ impl Widget for StorageWidget<'_> {
         let button = Button::image_and_text(image, self.storage.name());
         let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
         if response.hovered() {
-            Tooltip::for_widget(&response).show(|ui| {
+            Tooltip::for_widget(&response).at_pointer().show(|ui| {
                 ui.heading(self.storage.name());
                 ui.separator();
                 ui.label(format!(

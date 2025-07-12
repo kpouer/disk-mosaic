@@ -61,7 +61,7 @@ impl<'a> TreeMapPanel<'a> {
                             }
                         }
                         if data_widget.need_tooltip && response.hovered() {
-                            Tooltip::for_widget(&response).show(|ui| {
+                            Tooltip::for_widget(&response).at_pointer().show(|ui| {
                                 ui.heading(&data.name);
                                 ui.separator();
                                 ui.add(
