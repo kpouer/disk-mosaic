@@ -53,12 +53,12 @@ impl<'a> Task<'a> {
                 data.set_nodes(children);
             }
             Err(e) => {
-                warn!("Error scanning directory {:?}: {}", path, e);
+                warn!("Error scanning directory {path:?}: {e}");
             }
         }
 
         if let Err(e) = tx.send(Message::Data(data)) {
-            warn!("Failed to send data message: {}", e);
+            warn!("Failed to send data message: {e}");
         }
     }
 
@@ -203,7 +203,7 @@ impl<'a> Task<'a> {
                         {
                             let settings = settings.lock().unwrap();
                             if settings.is_path_ignored(&path) {
-                                info!("Ignoring path: {:?}", path);
+                                info!("Ignoring path: {path:?}");
                                 return;
                             }
                         }

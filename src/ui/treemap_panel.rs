@@ -2,8 +2,7 @@ use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::settings::Settings;
 use crate::ui::data_widget::DataWidget;
-use eframe::emath::Vec2;
-use egui::{Event, Label, TextWrapMode, Ui, Widget};
+use egui::{Event, Label, TextWrapMode, Ui, UiKind, Widget};
 use humansize::DECIMAL;
 use log::error;
 use std::sync::{Arc, Mutex};
@@ -91,15 +90,15 @@ impl<'a> TreeMapPanel<'a> {
                                 if ui.button("Browse...").clicked() {
                                     full_path.push(&data.name);
                                     if let Err(e) = opener::reveal(full_path.clone()) {
-                                        error!("Error opening file: {}", e)
+                                        error!("Error opening file: {e}")
                                     }
-                                    ui.close_menu();
+                                    ui.close_kind(UiKind::Menu);
                                 }
                                 if ui.button("Ignore path").clicked() {
                                     full_path.push(&data.name);
                                     let mut settings = self.settings.lock().unwrap();
                                     settings.add_ignored_path(full_path);
-                                    ui.close_menu();
+                                    ui.close_kind(UiKind::Menu);
                                 }
                             });
                         }

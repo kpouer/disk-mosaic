@@ -61,7 +61,7 @@ impl Settings {
     }
 
     pub(crate) fn add_ignored_path(&mut self, path: PathBuf) {
-        info!("add ignored path: {:?}", path);
+        info!("add ignored path: {path:?}");
         self.ignored_path.push(path);
         self.dirty = true;
     }

@@ -67,7 +67,7 @@ impl Data {
                 Some((v + 1) % egui_solarized::ACCENT_COLORS.len())
             })
             .unwrap_or_else(|e| {
-                warn!("AtomicUsize error: {}", e);
+                warn!("AtomicUsize error: {e}");
                 egui_solarized::ACCENT_COLORS.len()
             });
         egui_solarized::ACCENT_COLORS[idx]
