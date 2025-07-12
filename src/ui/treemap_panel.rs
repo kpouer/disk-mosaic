@@ -2,7 +2,7 @@ use crate::analysis_result::AnalysisResult;
 use crate::data::Kind;
 use crate::settings::Settings;
 use crate::ui::data_widget::DataWidget;
-use egui::{Event, Label, TextWrapMode, Ui, UiKind, Widget};
+use egui::{Event, Label, TextWrapMode, Tooltip, Ui, UiKind, Widget};
 use humansize::DECIMAL;
 use log::error;
 use std::sync::{Arc, Mutex};
@@ -36,7 +36,7 @@ impl<'a> TreeMapPanel<'a> {
             clip_rect.height() as f64,
         );
         let mut clicked_data_index = None;
-        let mut hovered_data_index = None;
+        let hovered_data_index = None;
         let mut full_path = self.analysis_result.root_path.clone();
         for item in self.analysis_result.data_stack[1..].iter() {
             full_path.push(&item.name);
@@ -52,37 +52,27 @@ impl<'a> TreeMapPanel<'a> {
                         let mut show_context_menu = false;
                         let mut data_widget = DataWidget::new(data);
                         let response = data_widget.ui(ui);
-                        if !response.context_menu_opened() {
+                        let context_menu_opened = response.context_menu_opened();
+                        if !context_menu_opened {
                             if response.double_clicked() && matches!(data.kind, Kind::Dir(_)) {
                                 clicked_data_index = Some(index);
                             } else if response.secondary_clicked() {
                                 show_context_menu = true;
-                            } else if response.hovered() {
-                                hovered_data_index = Some(index);
-                                if data_widget.need_tooltip {
-                                    egui::show_tooltip(
-                                        ui.ctx(),
-                                        ui.layer_id(),
-                                        egui::Id::new("my_tooltip"),
-                                        |ui| {
-                                            ui.heading(&data.name);
-                                            ui.separator();
-                                            ui.add(
-                                                Label::new(format!(
-                                                    "Size: {}",
-                                                    humansize::format_size(
-                                                        data.size() as u64,
-                                                        DECIMAL
-                                                    )
-                                                ))
-                                                .wrap_mode(TextWrapMode::Extend),
-                                            );
-                                        },
-                                    );
-                                }
                             }
                         }
-                        if response.context_menu_opened() || show_context_menu {
+                        if data_widget.need_tooltip && response.hovered() {
+                            Tooltip::for_widget(&response).show(|ui| {
+                                ui.heading(&data.name);
+                                ui.separator();
+                                ui.add(
+                                    Label::new(format!(
+                                        "Size: {}",
+                                        humansize::format_size(data.size() as u64, DECIMAL)
+                                    ))
+                                    .wrap_mode(TextWrapMode::Extend),
+                                );
+                            });
+                        } else if context_menu_opened || show_context_menu {
                             let mut full_path = full_path.clone();
                             response.context_menu(|ui| {
                                 ui.heading(&data.name);

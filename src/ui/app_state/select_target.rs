@@ -5,7 +5,7 @@ use crate::ui::about_dialog::AboutDialog;
 use crate::ui::settings_panel::SettingsContext;
 use crate::ui::settings_panel::SettingsDialog;
 use crate::util::{FONT_SIZE, PathBufToString};
-use egui::{Button, Color32, Context, Image, Response, Ui, Vec2, Widget, include_image};
+use egui::{Button, Color32, Context, Image, Response, Tooltip, Ui, Vec2, Widget, include_image};
 use home::home_dir;
 use humansize::DECIMAL;
 use std::path::PathBuf;
@@ -64,23 +64,18 @@ impl SelectTarget {
                     if home_response.clicked() {
                         selected_path = Some(home);
                     } else if home_response.hovered() {
-                        egui::show_tooltip(
-                            ui.ctx(),
-                            ui.layer_id(),
-                            egui::Id::new("my_tooltip"),
-                            |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.add(
-                                        Image::new(include_image!("../../../assets/home.svg"))
-                                            .tint(icon_color(&self.settings))
-                                            .fit_to_exact_size(Vec2::new(FONT_SIZE, FONT_SIZE)),
-                                    );
-                                    ui.heading(HOME_FOLDER);
-                                });
-                                ui.separator();
-                                ui.label(home.absolute_path());
-                            },
-                        );
+                        Tooltip::for_widget(&home_response).show(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    Image::new(include_image!("../../../assets/home.svg"))
+                                        .tint(icon_color(&self.settings))
+                                        .fit_to_exact_size(Vec2::new(FONT_SIZE, FONT_SIZE)),
+                                );
+                                ui.heading(HOME_FOLDER);
+                            });
+                            ui.separator();
+                            ui.label(home.absolute_path());
+                        });
                     }
                 }
 
@@ -126,7 +121,7 @@ impl Widget for StorageWidget<'_> {
         let button = Button::image_and_text(image, self.storage.name());
         let response = ui.add_sized(Vec2::new(ui.available_width(), HEIGHT), button);
         if response.hovered() {
-            egui::show_tooltip(ui.ctx(), ui.layer_id(), egui::Id::new("my_tooltip"), |ui| {
+            Tooltip::for_widget(&response).show(|ui| {
                 ui.heading(self.storage.name());
                 ui.separator();
                 ui.label(format!(
