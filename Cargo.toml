@@ -45,3 +45,12 @@ filesize_crate = ["filesize"]
 codegen-units = 1
 opt-level = 2
 lto = true
+
+[package.metadata.bundle]
+name = "DiskMosaic"
+identifier = "com.kpouer.diskmosaic"
+icon = ["packaging/DiskMosaic.app/Contents/Resources/AppIcon.icns"]
+version = "0.1.1"
+copyright = "Copyright (c) 2025 Matthieu Casanova"
+category = "Utility"
+short_description = "Disk Mosaic is a disk utility helping you to identify biggest folders"
