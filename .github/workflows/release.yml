@@ -20,16 +20,16 @@ jobs:
             artifact_name: Disk-Mosaic
             asset_name: disk-mosaic-linux-amd64
             friendly_name: Disk-Mosaic
-#          - os: macos-latest
-#            target: x86_64-apple-darwin
-#            artifact_name: disk-mosaic.app # Changed artifact name
-#            asset_name: disk-mosaic-macos-amd64
-#            friendly_name: DiskMosaic.app # Corrected friendly name to match artifact_name
-#          - os: windows-latest
-#            target: x86_64-pc-windows-msvc
-#            artifact_name: disk-mosaic.exe
-#            asset_name: disk-mosaic-windows-amd64.exe
-#            friendly_name: disk-mosaic.exe
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: disk-mosaic.app # Changed artifact name
+            asset_name: disk-mosaic-macos-amd64
+            friendly_name: DiskMosaic.app # Corrected friendly name to match artifact_name
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: disk-mosaic.exe
+            asset_name: disk-mosaic-windows-amd64.exe
+            friendly_name: disk-mosaic.exe
 
     steps:
       - name: Checkout code
