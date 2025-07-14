@@ -17,19 +17,19 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: disk-mosaic
+            artifact_name: Disk-Mosaic
             asset_name: disk-mosaic-linux-amd64
             friendly_name: Disk-Mosaic
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: disk-mosaic.app # Changed artifact name
-            asset_name: disk-mosaic-macos-amd64
-            friendly_name: DiskMosaic.app # Corrected friendly name to match artifact_name
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: disk-mosaic.exe
-            asset_name: disk-mosaic-windows-amd64.exe
-            friendly_name: disk-mosaic.exe
+#          - os: macos-latest
+#            target: x86_64-apple-darwin
+#            artifact_name: disk-mosaic.app # Changed artifact name
+#            asset_name: disk-mosaic-macos-amd64
+#            friendly_name: DiskMosaic.app # Corrected friendly name to match artifact_name
+#          - os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            artifact_name: disk-mosaic.exe
+#            asset_name: disk-mosaic-windows-amd64.exe
+#            friendly_name: disk-mosaic.exe
 
     steps:
       - name: Checkout code
@@ -75,25 +75,25 @@ jobs:
         if: matrix.os != 'macos-latest'
         shell: bash
         run: |
-          mkdir -p release/disk-mosaic
+          mkdir -p release/${{ matrix.friendly_name }}
           # Copy binary and rename to friendly name
-          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/disk-mosaic/${{ matrix.friendly_name }}
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/${{ matrix.friendly_name }}/${{ matrix.friendly_name }}
           # Copy assets directory
-          mkdir -p release/disk-mosaic/assets
-          cp -r assets/* release/disk-mosaic/assets/
+          mkdir -p release/${{ matrix.friendly_name }}/assets
+          cp -r assets/* release/${{ matrix.friendly_name }}/assets/
           # Copy media directory
-          mkdir -p release/disk-mosaic/media
-          cp -r media/* release/disk-mosaic/media/
+          mkdir -p release/${{ matrix.friendly_name }}/media
+          cp -r media/* release/${{ matrix.friendly_name }}/media/
           # Copy license and readme
-          cp LICENSE release/disk-mosaic/ || cp LICENCE release/disk-mosaic/ || echo "No license file found"
-          cp README.md release/disk-mosaic/ || echo "No README.md file found"
+          cp LICENSE release/${{ matrix.friendly_name }}/ || cp LICENCE release/${{ matrix.friendly_name }}/ || echo "No license file found"
+          cp README.md release/${{ matrix.friendly_name }}/ || echo "No README.md file found"
 
           # Create archive based on OS
           cd release
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a -tzip disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.zip disk-mosaic
+            7z a -tzip ${{ matrix.friendly_name }}-${{ github.ref_name }}-${{ matrix.asset_name }}.zip ${{ matrix.friendly_name }}
           else
-            tar -czf disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.tar.gz disk-mosaic
+            tar -czf ${{ matrix.friendly_name }}-${{ github.ref_name }}-${{ matrix.asset_name }}.tar.gz ${{ matrix.friendly_name }}
           fi
           cd ..
 
@@ -103,8 +103,8 @@ jobs:
         run: |
           APP_NAME="${{ matrix.friendly_name }}"
           APP_DIR="target/${{ matrix.target }}/release/bundle/osx/$APP_NAME"
-          DMG_NAME="disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.dmg"
-          VOL_NAME="Disk Mosaic ${{ github.ref_name }}"
+          DMG_NAME="${{ matrix.friendly_name }}-${{ github.ref_name }}-${{ matrix.asset_name }}.dmg"
+          VOL_NAME="${{ matrix.friendly_name }} ${{ github.ref_name }}"
 
           # Ensure the app directory exists
           if [ ! -d "$APP_DIR" ]; then
@@ -138,9 +138,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}
+          name: ${{ matrix.friendly_name }}-${{ github.ref_name }}-${{ matrix.asset_name }}
           # Adjust path glob to include .dmg, .zip, .tar.gz
-          path: release/disk-mosaic-${{ github.ref_name }}-${{ matrix.asset_name }}.*
+          path: release/${{ matrix.friendly_name }}-${{ github.ref_name }}-${{ matrix.asset_name }}.*
 
   release:
     name: Create Release
