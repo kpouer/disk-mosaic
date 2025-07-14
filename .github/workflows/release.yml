@@ -78,7 +78,12 @@ jobs:
           mkdir -p release/disk-mosaic
           # Copy binary and rename to friendly name
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release/disk-mosaic/${{ matrix.friendly_name }}
-          # Copy assets
+          # Copy assets directory
+          mkdir -p release/disk-mosaic/assets
+          cp -r assets/* release/disk-mosaic/assets/
+          # Copy media directory
+          mkdir -p release/disk-mosaic/media
+          cp -r media/* release/disk-mosaic/media/
           # Copy license and readme
           cp LICENSE release/disk-mosaic/ || cp LICENCE release/disk-mosaic/ || echo "No license file found"
           cp README.md release/disk-mosaic/ || echo "No README.md file found"
@@ -113,6 +118,15 @@ jobs:
           # Copy assets, license, readme, and third-party licenses
           cp packaging/DiskMosaic.app/Contents/Info.plist "$APP_DIR/Contents/"
           cp packaging/DiskMosaic.app/Contents/Resources/AppIcon.icns "$APP_DIR/Contents/Resources/"
+
+          # Copy assets directory
+          mkdir -p "$APP_DIR/Contents/Resources/assets"
+          cp -r assets/* "$APP_DIR/Contents/Resources/assets/"
+
+          # Copy media directory
+          mkdir -p "$APP_DIR/Contents/Resources/media"
+          cp -r media/* "$APP_DIR/Contents/Resources/media/"
+
           cp LICENSE "$APP_DIR/Contents/Resources/" || cp LICENCE "$APP_DIR/Contents/Resources/" || echo "No license file found"
           cp README.md "$APP_DIR/Contents/Resources/" || echo "No README.md file found"
           cp THIRDPARTY.yml "$APP_DIR/Contents/Resources/" || echo "No THIRDPARTY.yml file found"
@@ -150,10 +164,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-linux-amd64.tar.gz
-            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64/disk-mosaic-${{ github.ref_name }}-disk-mosaic-macos-amd64.dmg
-            artifacts/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe/disk-mosaic-${{ github.ref_name }}-disk-mosaic-windows-amd64.exe.zip
+          files: artifacts/**/*
           name: Disk Mosaic ${{ github.ref_name }}
           body: |
             # Disk Mosaic ${{ github.ref_name }}
