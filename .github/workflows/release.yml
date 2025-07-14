@@ -19,12 +19,12 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: disk-mosaic
             asset_name: disk-mosaic-linux-amd64
-            friendly_name: disk-mosaic
+            friendly_name: Disk-Mosaic
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: disk-mosaic.app # Changed artifact name
             asset_name: disk-mosaic-macos-amd64
-            friendly_name: disk-mosaic.app # Corrected friendly name to match artifact_name
+            friendly_name: DiskMosaic.app # Corrected friendly name to match artifact_name
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: disk-mosaic.exe
